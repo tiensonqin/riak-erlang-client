@@ -46,6 +46,7 @@
          set_client_id/2, set_client_id/3,
          get_server_info/1, get_server_info/2,
          get/3, get/4, get/5,
+         scan/6, scan/7, scan/8,
          put/2, put/3, put/4,
          delete/3, delete/4, delete/5,
          delete_vclock/4, delete_vclock/5, delete_vclock/6,
@@ -100,7 +101,7 @@
 -type rpb_resp() :: atom() | tuple().
 -type msg_id() :: non_neg_integer(). %% Request identifier for tunneled message types
 -type search_admin_opt() :: {timeout, timeout()} |
-                     {call_timeout, timeout()}.
+                            {call_timeout, timeout()}.
 -type search_admin_opts() :: [search_admin_opt()].
 -type index_opt() :: {timeout, timeout()} |
                      {call_timeout, timeout()} |
@@ -134,7 +135,7 @@
 -record(state, {address :: address(),    % address to connect to
                 port :: portnum(),       % port to connect to
                 auto_reconnect = false :: boolean(), % if true, automatically reconnects to server
-                                        % if false, exits on connection failure/request timeout
+                                                % if false, exits on connection failure/request timeout
                 queue_if_disconnected = false :: boolean(), % if true, add requests to queue if disconnected
                 sock :: port() | ssl:sslsocket(),       % gen_tcp socket
                 keepalive = false :: boolean(), % if true, enabled TCP keepalive for the socket
@@ -147,44 +148,44 @@
                 credentials :: undefined | {string(), string()}, % username/password
                 cacertfile,    % Path to CA certificate file
                 certfile,      % Path to client certificate file, when using
-                               % certificate authentication
+                                                % certificate authentication
                 keyfile,       % Path to certificate keyfile, when using
-                               % certificate authentication
+                                                % certificate authentication
                 ssl_opts = [], % Arbitrary SSL options, see the erlang SSL
-                               % documentation.
+                                                % documentation.
                 reconnect_interval=?FIRST_RECONNECT_INTERVAL :: non_neg_integer()}).
 
 %% @private Like `gen_server:call/3', but with the timeout hardcoded
 %% to `infinity'.
-call_infinity(Pid, Msg) ->
+call_infinity(Pid, Msg)                                                                                                                           ->
     gen_server:call(Pid, Msg, infinity).
 
 %% @doc Create a linked process to talk with the riak server on Address:Port
 %%      Client id will be assigned by the server.
 -spec start_link(address(), portnum()) -> {ok, pid()} | {error, term()}.
-start_link(Address, Port) ->
+start_link(Address, Port)                                                                                                                         ->
     start_link(Address, Port, []).
 
 %% @doc Create a linked process to talk with the riak server on Address:Port with Options.
 %%      Client id will be assigned by the server.
 -spec start_link(address(), portnum(), client_options()) -> {ok, pid()} | {error, term()}.
-start_link(Address, Port, Options) when is_list(Options) ->
+start_link(Address, Port, Options) when is_list(Options)                                                                                          ->
     gen_server:start_link(?MODULE, [Address, Port, Options], []).
 
 %% @doc Create a process to talk with the riak server on Address:Port.
 %%      Client id will be assigned by the server.
 -spec start(address(), portnum()) -> {ok, pid()} | {error, term()}.
-start(Address, Port) ->
+start(Address, Port)                                                                                                                              ->
     start(Address, Port, []).
 
 %% @doc Create a process to talk with the riak server on Address:Port with Options.
 -spec start(address(), portnum(), client_options()) -> {ok, pid()} | {error, term()}.
-start(Address, Port, Options) when is_list(Options) ->
+start(Address, Port, Options) when is_list(Options)                                                                                               ->
     gen_server:start(?MODULE, [Address, Port, Options], []).
 
 %% @doc Disconnect the socket and stop the process.
 -spec stop(pid()) -> ok.
-stop(Pid) ->
+stop(Pid)                                                                                                                                         ->
     call_infinity(Pid, stop).
 
 %% @doc Change the options for this socket.  Allows you to connect with one
@@ -193,14 +194,14 @@ stop(Pid) ->
 %% @equiv set_options(Pid, Options, infinity)
 %% @see start_link/3
 -spec set_options(pid(), client_options()) -> ok.
-set_options(Pid, Options) ->
+set_options(Pid, Options)                                                                                                                         ->
     call_infinity(Pid, {set_options, Options}).
 
 %% @doc Like set_options/2, but with a gen_server timeout.
 %% @see start_link/3
 %% @deprecated
 -spec set_options(pid(), client_options(), timeout()) -> ok.
-set_options(Pid, Options, Timeout) ->
+set_options(Pid, Options, Timeout)                                                                                                                ->
     gen_server:call(Pid, {set_options, Options}, Timeout).
 
 %% @doc Determines whether the client is connected. Returns true if
@@ -208,7 +209,7 @@ set_options(Pid, Options, Timeout) ->
 %% disconnected.
 %% @equiv is_connected(Pid, infinity)
 -spec is_connected(pid()) -> true | {false, [connection_failure()]}.
-is_connected(Pid) ->
+is_connected(Pid)                                                                                                                                 ->
     call_infinity(Pid, is_connected).
 
 %% @doc Determines whether the client is connected, with the specified
@@ -217,40 +218,40 @@ is_connected(Pid) ->
 %% @see is_connected/1
 %% @deprecated
 -spec is_connected(pid(), timeout()) -> true | {false, [connection_failure()]}.
-is_connected(Pid, Timeout) ->
+is_connected(Pid, Timeout)                                                                                                                        ->
     gen_server:call(Pid, is_connected, Timeout).
 
 %% @doc Ping the server
 %% @equiv ping(Pid, default_timeout(ping_timeout))
 -spec ping(pid()) -> pong.
-ping(Pid) ->
+ping(Pid)                                                                                                                                         ->
     call_infinity(Pid, {req, rpbpingreq, default_timeout(ping_timeout)}).
 
 %% @doc Ping the server specifying timeout
 -spec ping(pid(), timeout()) -> pong.
-ping(Pid, Timeout) ->
+ping(Pid, Timeout)                                                                                                                                ->
     call_infinity(Pid, {req, rpbpingreq, Timeout}).
 
 %% @doc Get the client id for this connection
 %% @equiv get_client_id(Pid, default_timeout(get_client_id_timeout))
 -spec get_client_id(pid()) -> {ok, client_id()} | {error, term()}.
-get_client_id(Pid) ->
+get_client_id(Pid)                                                                                                                                ->
     get_client_id(Pid, default_timeout(get_client_id_timeout)).
 
 %% @doc Get the client id for this connection specifying timeout
 -spec get_client_id(pid(), timeout()) -> {ok, client_id()} | {error, term()}.
-get_client_id(Pid, Timeout) ->
+get_client_id(Pid, Timeout)                                                                                                                       ->
     call_infinity(Pid, {req, rpbgetclientidreq, Timeout}).
 
 %% @doc Set the client id for this connection
 %% @equiv set_client_id(Pid, ClientId, default_timeout(set_client_id_timeout))
 -spec set_client_id(pid(), client_id()) -> {ok, client_id()} | {error, term()}.
-set_client_id(Pid, ClientId) ->
+set_client_id(Pid, ClientId)                                                                                                                      ->
     set_client_id(Pid, ClientId, default_timeout(set_client_id_timeout)).
 
 %% @doc Set the client id for this connection specifying timeout
 -spec set_client_id(pid(), client_id(), timeout()) -> {ok, client_id()} | {error, term()}.
-set_client_id(Pid, ClientId, Timeout) ->
+set_client_id(Pid, ClientId, Timeout)                                                                                                             ->
     call_infinity(Pid,
                   {req, #rpbsetclientidreq{client_id = ClientId},
                    Timeout}).
@@ -258,19 +259,19 @@ set_client_id(Pid, ClientId, Timeout) ->
 %% @doc Get the server information for this connection
 %% @equiv get_server_info(Pid, default_timeout(get_server_info_timeout))
 -spec get_server_info(pid()) -> {ok, server_info()} | {error, term()}.
-get_server_info(Pid) ->
+get_server_info(Pid)                                                                                                                              ->
     get_server_info(Pid, default_timeout(get_server_info_timeout)).
 
 %% @doc Get the server information for this connection specifying timeout
 -spec get_server_info(pid(), timeout()) -> {ok, server_info()} | {error, term()}.
-get_server_info(Pid, Timeout) ->
+get_server_info(Pid, Timeout)                                                                                                                     ->
     call_infinity(Pid, {req, rpbgetserverinforeq, Timeout}).
 
 %% @doc Get bucket/key from the server.
 %%      Will return {error, notfound} if the key is not on the server.
 %% @equiv get(Pid, Bucket, Key, [], default_timeout(get_timeout))
 -spec get(pid(), bucket(), key()) -> {ok, riakc_obj()} | {error, term()}.
-get(Pid, Bucket, Key) ->
+get(Pid, Bucket, Key)                                                                                                                             ->
     get(Pid, Bucket, Key, [], default_timeout(get_timeout)).
 
 %% @doc Get bucket/key from the server specifying timeout.
@@ -278,9 +279,9 @@ get(Pid, Bucket, Key) ->
 %% @equiv get(Pid, Bucket, Key, Options, Timeout)
 -spec get(pid(), bucket(), key(), TimeoutOrOptions::timeout() |  get_options()) ->
                  {ok, riakc_obj()} | {error, term()} | unchanged.
-get(Pid, Bucket, Key, Timeout) when is_integer(Timeout); Timeout =:= infinity ->
+get(Pid, Bucket, Key, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                                     ->
     get(Pid, Bucket, Key, [], Timeout);
-get(Pid, Bucket, Key, Options) ->
+get(Pid, Bucket, Key, Options)                                                                                                                    ->
     get(Pid, Bucket, Key, Options, default_timeout(get_timeout)).
 
 %% @doc Get bucket/key from the server supplying options and timeout.
@@ -289,9 +290,22 @@ get(Pid, Bucket, Key, Options) ->
 %%      object is unchanged.
 -spec get(pid(), bucket(), key(), get_options(), timeout()) ->
                  {ok, riakc_obj()} | {error, term()} | unchanged.
-get(Pid, Bucket, Key, Options, Timeout) ->
+get(Pid, Bucket, Key, Options, Timeout)                                                                                                           ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = get_options(Options, #rpbgetreq{type =T, bucket = B, key = Key}),
+    call_infinity(Pid, {req, Req, Timeout}).
+
+scan(Pid, Bucket, Key, Offset, Len, Order)                                                                                                        ->
+    scan(Pid, Bucket, Key, Offset, Len, Order, [], default_timeout(get_timeout)).
+
+scan(Pid, Bucket, Key, Offset, Len, Order, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                ->
+    scan(Pid, Bucket, Key, Offset, Len, Order, [], Timeout);
+scan(Pid, Bucket, Key, Offset, Len, Order, Options)                                                                                               ->
+    scan(Pid, Bucket, Key, Offset, Len, Order, Options, default_timeout(get_timeout)).
+
+scan(Pid, Bucket, Key, Offset, Len, Order, Options, Timeout)                                                                                      ->
+    {T, B} = maybe_bucket_type(Bucket),
+    Req = scan_options(Options, #rpbscanreq{type =T, bucket = B, key = Key, offset = Offset, len = Len, order = Order, timeout=Timeout}),
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc Put the metadata/value in the object under bucket/key
@@ -299,7 +313,7 @@ get(Pid, Bucket, Key, Options, Timeout) ->
 %% @see put/4
 -spec put(pid(), riakc_obj()) ->
                  ok | {ok, riakc_obj()} | {ok, key()} | {error, term()}.
-put(Pid, Obj) ->
+put(Pid, Obj)                                                                                                                                     ->
     put(Pid, Obj, []).
 
 %% @doc Put the metadata/value in the object under bucket/key with options or timeout.
@@ -307,9 +321,9 @@ put(Pid, Obj) ->
 %% @see put/4
 -spec put(pid(), riakc_obj(), TimeoutOrOptions::timeout() | put_options()) ->
                  ok | {ok, riakc_obj()} |  riakc_obj() | {ok, key()} | {error, term()}.
-put(Pid, Obj, Timeout) when is_integer(Timeout); Timeout =:= infinity ->
+put(Pid, Obj, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                                             ->
     put(Pid, Obj, [], Timeout);
-put(Pid, Obj, Options) ->
+put(Pid, Obj, Options)                                                                                                                            ->
     put(Pid, Obj, Options, default_timeout(put_timeout)).
 
 %% @doc Put the metadata/value in the object under bucket/key with
@@ -325,7 +339,7 @@ put(Pid, Obj, Options) ->
 %% @end
 -spec put(pid(), riakc_obj(), put_options(), timeout()) ->
                  ok | {ok, riakc_obj()} | riakc_obj() | {ok, key()} | {error, term()}.
-put(Pid, Obj, Options, Timeout) ->
+put(Pid, Obj, Options, Timeout)                                                                                                                   ->
     Content = riak_pb_kv_codec:encode_content({riakc_obj:get_update_metadata(Obj),
                                                riakc_obj:get_update_value(Obj)}),
     Req = put_options(Options,
@@ -339,21 +353,21 @@ put(Pid, Obj, Options, Timeout) ->
 %% @doc Delete the key/value
 %% @equiv delete(Pid, Bucket, Key, [])
 -spec delete(pid(), bucket(), key()) -> ok | {error, term()}.
-delete(Pid, Bucket, Key) ->
+delete(Pid, Bucket, Key)                                                                                                                          ->
     delete(Pid, Bucket, Key, []).
 
 %% @doc Delete the key/value specifying timeout or options. <em>Note that the rw quorum is deprecated, use r and w.</em>
 %% @equiv delete(Pid, Bucket, Key, Options, Timeout)
 -spec delete(pid(), bucket(), key(), TimeoutOrOptions::timeout() | delete_options()) ->
                     ok | {error, term()}.
-delete(Pid, Bucket, Key, Timeout) when is_integer(Timeout); Timeout =:= infinity ->
+delete(Pid, Bucket, Key, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                                  ->
     delete(Pid, Bucket, Key, [], Timeout);
-delete(Pid, Bucket, Key, Options) ->
+delete(Pid, Bucket, Key, Options)                                                                                                                 ->
     delete(Pid, Bucket, Key, Options, default_timeout(delete_timeout)).
 
 %% @doc Delete the key/value with options and timeout. <em>Note that the rw quorum is deprecated, use r and w.</em>
 -spec delete(pid(), bucket(), key(), delete_options(), timeout()) -> ok | {error, term()}.
-delete(Pid, Bucket, Key, Options, Timeout) ->
+delete(Pid, Bucket, Key, Options, Timeout)                                                                                                        ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = delete_options(Options, #rpbdelreq{type = T, bucket = B, key = Key}),
     call_infinity(Pid, {req, Req, Timeout}).
@@ -362,16 +376,16 @@ delete(Pid, Bucket, Key, Options, Timeout) ->
 %% @doc Delete the object at Bucket/Key, giving the vector clock.
 %% @equiv delete_vclock(Pid, Bucket, Key, VClock, [])
 -spec delete_vclock(pid(), bucket(), key(), riakc_obj:vclock()) -> ok | {error, term()}.
-delete_vclock(Pid, Bucket, Key, VClock) ->
+delete_vclock(Pid, Bucket, Key, VClock)                                                                                                           ->
     delete_vclock(Pid, Bucket, Key, VClock, []).
 
 %% @doc Delete the object at Bucket/Key, specifying timeout or options and giving the vector clock.
 %% @equiv delete_vclock(Pid, Bucket, Key, VClock, Options, Timeout)
 -spec delete_vclock(pid(), bucket(), key(), riakc_obj:vclock(), TimeoutOrOptions::timeout() | delete_options()) ->
                            ok | {error, term()}.
-delete_vclock(Pid, Bucket, Key, VClock, Timeout) when is_integer(Timeout); Timeout =:= infinity ->
+delete_vclock(Pid, Bucket, Key, VClock, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                   ->
     delete_vclock(Pid, Bucket, Key, VClock, [], Timeout);
-delete_vclock(Pid, Bucket, Key, VClock, Options) ->
+delete_vclock(Pid, Bucket, Key, VClock, Options)                                                                                                  ->
     delete_vclock(Pid, Bucket, Key, VClock, Options, default_timeout(delete_timeout)).
 
 %% @doc Delete the key/value with options and timeout and giving the
@@ -380,10 +394,10 @@ delete_vclock(Pid, Bucket, Key, VClock, Options) ->
 %% @see delete_obj/4
 -spec delete_vclock(pid(), bucket(), key(), riakc_obj:vclock(), delete_options(), timeout()) ->
                            ok | {error, term()}.
-delete_vclock(Pid, Bucket, Key, VClock, Options, Timeout) ->
+delete_vclock(Pid, Bucket, Key, VClock, Options, Timeout)                                                                                         ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = delete_options(Options, #rpbdelreq{type = T, bucket = B, key = Key,
-            vclock=VClock}),
+                                             vclock=VClock}),
     call_infinity(Pid, {req, Req, Timeout}).
 
 
@@ -391,45 +405,45 @@ delete_vclock(Pid, Bucket, Key, VClock, Options, Timeout) ->
 %% @equiv delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj), riakc_obj:vclock(Obj))
 %% @see delete_vclock/6
 -spec delete_obj(pid(), riakc_obj()) -> ok | {error, term()}.
-delete_obj(Pid, Obj) ->
+delete_obj(Pid, Obj)                                                                                                                              ->
     delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj),
-        riakc_obj:vclock(Obj), [], default_timeout(delete_timeout)).
+                  riakc_obj:vclock(Obj), [], default_timeout(delete_timeout)).
 
 %% @doc Delete the riak object with options.
 %% @equiv delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj), riakc_obj:vclock(Obj), Options)
 %% @see delete_vclock/6
 -spec delete_obj(pid(), riakc_obj(), delete_options()) -> ok | {error, term()}.
-delete_obj(Pid, Obj, Options) ->
+delete_obj(Pid, Obj, Options)                                                                                                                     ->
     delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj),
-        riakc_obj:vclock(Obj), Options, default_timeout(delete_timeout)).
+                  riakc_obj:vclock(Obj), Options, default_timeout(delete_timeout)).
 
 %% @doc Delete the riak object with options and timeout.
 %% @equiv delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj), riakc_obj:vclock(Obj), Options, Timeout)
 %% @see delete_vclock/6
 -spec delete_obj(pid(), riakc_obj(), delete_options(), timeout()) -> ok | {error, term()}.
-delete_obj(Pid, Obj, Options, Timeout) ->
+delete_obj(Pid, Obj, Options, Timeout)                                                                                                            ->
     delete_vclock(Pid, riakc_obj:bucket(Obj), riakc_obj:key(Obj),
-        riakc_obj:vclock(Obj), Options, Timeout).
+                  riakc_obj:vclock(Obj), Options, Timeout).
 
 %% @doc List all buckets on the server.
 %% <em>This is a potentially expensive operation and should not be used in production.</em>
 %% @equiv list_buckets(Pid, default_timeout(list_buckets_timeout))
 -spec list_buckets(pid()) -> {ok, [bucket()]} | {error, term()}.
-list_buckets(Pid) ->
+list_buckets(Pid)                                                                                                                                 ->
     list_buckets(Pid, <<"default">>, []).
 
 %% @doc List all buckets on the server specifying server-side timeout.
 %% <em>This is a potentially expensive operation and should not be used in production.</em>
 -spec list_buckets(pid(), timeout()|list()|binary()) -> {ok, [bucket()]} |
-                                                   {error, term()}.
-list_buckets(Pid, Type) when is_binary(Type) ->
+                                                        {error, term()}.
+list_buckets(Pid, Type) when is_binary(Type)                                                                                                      ->
     list_buckets(Pid, Type, []);
-list_buckets(Pid, Timeout) when is_integer(Timeout) ->
+list_buckets(Pid, Timeout) when is_integer(Timeout)                                                                                               ->
     list_buckets(Pid, <<"default">>, [{timeout, Timeout}]);
-list_buckets(Pid, Options) ->
+list_buckets(Pid, Options)                                                                                                                        ->
     list_buckets(Pid, <<"default">>, Options).
 
-list_buckets(Pid, Type, Options) when is_binary(Type), is_list(Options) ->
+list_buckets(Pid, Type, Options) when is_binary(Type), is_list(Options)                                                                           ->
     case stream_list_buckets(Pid, Type, Options) of
         {ok, ReqId} ->
             wait_for_list(ReqId);
@@ -437,17 +451,17 @@ list_buckets(Pid, Type, Options) when is_binary(Type), is_list(Options) ->
             Error
     end.
 
-stream_list_buckets(Pid) ->
+stream_list_buckets(Pid)                                                                                                                          ->
     stream_list_buckets(Pid, <<"default">>, []).
 
-stream_list_buckets(Pid, Type) when is_binary(Type) ->
+stream_list_buckets(Pid, Type) when is_binary(Type)                                                                                               ->
     stream_list_buckets(Pid, Type, []);
-stream_list_buckets(Pid, Timeout) when is_integer(Timeout) ->
+stream_list_buckets(Pid, Timeout) when is_integer(Timeout)                                                                                        ->
     stream_list_buckets(Pid, <<"default">>,[{timeout, Timeout}]);
-stream_list_buckets(Pid, Options) ->
+stream_list_buckets(Pid, Options)                                                                                                                 ->
     stream_list_buckets(Pid, <<"default">>, Options).
 
-stream_list_buckets(Pid, Type, Options) ->
+stream_list_buckets(Pid, Type, Options)                                                                                                           ->
     ServerTimeout =
         case proplists:get_value(timeout, Options, none) of
             none -> ?DEFAULT_PB_TIMEOUT;
@@ -455,11 +469,11 @@ stream_list_buckets(Pid, Type, Options) ->
         end,
     ReqId = mk_reqid(),
     call_infinity(Pid, {req, #rpblistbucketsreq{timeout=ServerTimeout,
-                                                  type=Type,
-                                                  stream=true},
-                          ServerTimeout, {ReqId, self()}}).
+                                                type=Type,
+                                                stream=true},
+                        ServerTimeout, {ReqId, self()}}).
 
-legacy_list_buckets(Pid, Options) ->
+legacy_list_buckets(Pid, Options)                                                                                                                 ->
     ServerTimeout =
         case proplists:get_value(timeout, Options, none) of
             none -> ?DEFAULT_PB_TIMEOUT;
@@ -473,7 +487,7 @@ legacy_list_buckets(Pid, Options) ->
 %% <em>This is a potentially expensive operation and should not be used in production.</em>
 %% @equiv list_keys(Pid, Bucket, default_timeout(list_keys_timeout))
 -spec list_keys(pid(), bucket()) -> {ok, [key()]} | {error, term()}.
-list_keys(Pid, Bucket) ->
+list_keys(Pid, Bucket)                                                                                                                            ->
     list_keys(Pid, Bucket, []).
 
 %% @doc List all keys in a bucket specifying timeout. This is
@@ -482,11 +496,11 @@ list_keys(Pid, Bucket) ->
 %% <em>This is a potentially expensive operation and should not be used in production.</em>
 -spec list_keys(pid(), bucket(), list()|timeout()) -> {ok, [key()]} |
                                                       {error, term()}.
-list_keys(Pid, Bucket, infinity) ->
+list_keys(Pid, Bucket, infinity)                                                                                                                  ->
     list_keys(Pid, Bucket, [{timeout, undefined}]);
-list_keys(Pid, Bucket, Timeout) when is_integer(Timeout) ->
+list_keys(Pid, Bucket, Timeout) when is_integer(Timeout)                                                                                          ->
     list_keys(Pid, Bucket, [{timeout, Timeout}]);
-list_keys(Pid, Bucket, Options) ->
+list_keys(Pid, Bucket, Options)                                                                                                                   ->
     case stream_list_keys(Pid, Bucket, Options) of
         {ok, ReqId} ->
             wait_for_list(ReqId);
@@ -501,7 +515,7 @@ list_keys(Pid, Bucket, Options) ->
 %% <em>This is a potentially expensive operation and should not be used in production.</em>
 %% @equiv stream_list_keys(Pid, Bucket, default_timeout(stream_list_keys_timeout))
 -spec stream_list_keys(pid(), bucket()) -> {ok, req_id()} | {error, term()}.
-stream_list_keys(Pid, Bucket) ->
+stream_list_keys(Pid, Bucket)                                                                                                                     ->
     stream_list_keys(Pid, Bucket, []).
 
 %% @doc Stream list of keys in the bucket to the calling process specifying server side
@@ -514,11 +528,11 @@ stream_list_keys(Pid, Bucket) ->
 -spec stream_list_keys(pid(), bucket(), integer()|list()) ->
                               {ok, req_id()} |
                               {error, term()}.
-stream_list_keys(Pid, Bucket, infinity) ->
+stream_list_keys(Pid, Bucket, infinity)                                                                                                           ->
     stream_list_keys(Pid, Bucket, [{timeout, undefined}]);
-stream_list_keys(Pid, Bucket, Timeout) when is_integer(Timeout) ->
+stream_list_keys(Pid, Bucket, Timeout) when is_integer(Timeout)                                                                                   ->
     stream_list_keys(Pid, Bucket, [{timeout, Timeout}]);
-stream_list_keys(Pid, Bucket, Options) ->
+stream_list_keys(Pid, Bucket, Options)                                                                                                            ->
     ServerTimeout =
         case proplists:get_value(timeout, Options, none) of
             none -> ?DEFAULT_PB_TIMEOUT;
@@ -532,57 +546,57 @@ stream_list_keys(Pid, Bucket, Options) ->
 %% @doc Get bucket properties.
 %% @equiv get_bucket(Pid, Bucket, default_timeout(get_bucket_timeout))
 -spec get_bucket(pid(), bucket()) -> {ok, bucket_props()} | {error, term()}.
-get_bucket(Pid, Bucket) ->
+get_bucket(Pid, Bucket)                                                                                                                           ->
     get_bucket(Pid, Bucket, default_timeout(get_bucket_timeout)).
 
 %% @doc Get bucket properties specifying a server side timeout.
 %% @equiv get_bucket(Pid, Bucket, Timeout, default_timeout(get_bucket_call_timeout))
 -spec get_bucket(pid(), bucket(), timeout()) -> {ok, bucket_props()} | {error, term()}.
-get_bucket(Pid, Bucket, Timeout) ->
+get_bucket(Pid, Bucket, Timeout)                                                                                                                  ->
     get_bucket(Pid, Bucket, Timeout, default_timeout(get_bucket_call_timeout)).
 
 %% @doc Get bucket properties specifying a server side and local call timeout.
 %% @deprecated because `CallTimeout' is ignored
 -spec get_bucket(pid(), bucket(), timeout(), timeout()) -> {ok, bucket_props()} |
                                                            {error, term()}.
-get_bucket(Pid, Bucket, Timeout, _CallTimeout) ->
+get_bucket(Pid, Bucket, Timeout, _CallTimeout)                                                                                                    ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = #rpbgetbucketreq{type = T, bucket = B},
     call_infinity(Pid, {req, Req, Timeout}).
 
-get_bucket_type(Pid, BucketType) ->
+get_bucket_type(Pid, BucketType)                                                                                                                  ->
     get_bucket_type(Pid, BucketType, default_timeout(get_bucket_timeout)).
 
-get_bucket_type(Pid, BucketType, Timeout) ->
+get_bucket_type(Pid, BucketType, Timeout)                                                                                                         ->
     Req = #rpbgetbuckettypereq{type = BucketType},
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc Set bucket properties.
 %% @equiv set_bucket(Pid, Bucket, BucketProps, default_timeout(set_bucket_timeout))
 -spec set_bucket(pid(), bucket(), bucket_props()) -> ok | {error, term()}.
-set_bucket(Pid, Bucket, BucketProps) ->
+set_bucket(Pid, Bucket, BucketProps)                                                                                                              ->
     set_bucket(Pid, Bucket, BucketProps, default_timeout(set_bucket_timeout)).
 
 %% @doc Set bucket properties specifying a server side timeout.
 %% @equiv set_bucket(Pid, Bucket, BucketProps, Timeout, default_timeout(set_bucket_call_timeout))
 -spec set_bucket(pid(), bucket(), bucket_props(), timeout()) -> ok | {error, term()}.
-set_bucket(Pid, Bucket, BucketProps, Timeout) ->
+set_bucket(Pid, Bucket, BucketProps, Timeout)                                                                                                     ->
     set_bucket(Pid, Bucket, BucketProps, Timeout,
                default_timeout(set_bucket_call_timeout)).
 
 %% @doc Set bucket properties specifying a server side and local call timeout.
 %% @deprecated because `CallTimeout' is ignored
 -spec set_bucket(pid(), bucket(), bucket_props(), timeout(), timeout()) -> ok | {error, term()}.
-set_bucket(Pid, Bucket, BucketProps, Timeout, _CallTimeout) ->
+set_bucket(Pid, Bucket, BucketProps, Timeout, _CallTimeout)                                                                                       ->
     PbProps = riak_pb_codec:encode_bucket_props(BucketProps),
     {T, B} = maybe_bucket_type(Bucket),
     Req = #rpbsetbucketreq{type = T, bucket = B, props = PbProps},
     call_infinity(Pid, {req, Req, Timeout}).
 
-set_bucket_type(Pid, BucketType, BucketProps) ->
+set_bucket_type(Pid, BucketType, BucketProps)                                                                                                     ->
     set_bucket_type(Pid, BucketType, BucketProps, default_timeout(set_bucket_timeout)).
 
-set_bucket_type(Pid, BucketType, BucketProps, Timeout) ->
+set_bucket_type(Pid, BucketType, BucketProps, Timeout)                                                                                            ->
     PbProps = riak_pb_codec:encode_bucket_props(BucketProps),
     Req = #rpbsetbuckettypereq{type = BucketType, props = PbProps},
     call_infinity(Pid, {req, Req, Timeout}).
@@ -590,19 +604,19 @@ set_bucket_type(Pid, BucketType, BucketProps, Timeout) ->
 %% @doc Reset bucket properties back to the defaults.
 %% @equiv reset_bucket(Pid, Bucket, default_timeout(reset_bucket_timeout), default_timeout(reset_bucket_call_timeout))
 -spec reset_bucket(pid(), bucket) -> ok | {error, term()}.
-reset_bucket(Pid, Bucket) ->
+reset_bucket(Pid, Bucket)                                                                                                                         ->
     reset_bucket(Pid, Bucket, default_timeout(reset_bucket_timeout), default_timeout(reset_bucket_call_timeout)).
 
 %% @doc Reset bucket properties back to the defaults.
 %% @equiv reset_bucket(Pid, Bucket, Timeout, default_timeout(reset_bucket_call_timeout))
 -spec reset_bucket(pid(), bucket, timeout()) -> ok | {error, term()}.
-reset_bucket(Pid, Bucket, Timeout) ->
+reset_bucket(Pid, Bucket, Timeout)                                                                                                                ->
     reset_bucket(Pid, Bucket, Timeout, default_timeout(reset_bucket_call_timeout)).
 
 %% @doc Reset bucket properties back to the defaults.
 %% @deprecated because `CallTimeout' is ignored
 -spec reset_bucket(pid(), bucket, timeout(), timeout()) -> ok | {error, term()}.
-reset_bucket(Pid, Bucket, Timeout, _CallTimeout) ->
+reset_bucket(Pid, Bucket, Timeout, _CallTimeout)                                                                                                  ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = #rpbresetbucketreq{type = T, bucket = B},
     call_infinity(Pid, {req, Req, Timeout}).
@@ -615,7 +629,7 @@ reset_bucket(Pid, Bucket, Timeout, _CallTimeout) ->
                     {error, {badqterm, mapred_queryterm()}} |
                     {error, timeout} |
                     {error, term()}.
-mapred(Pid, Inputs, Query) ->
+mapred(Pid, Inputs, Query)                                                                                                                        ->
     mapred(Pid, Inputs, Query, default_timeout(mapred_timeout)).
 
 %% @doc Perform a MapReduce job across the cluster with a job timeout.
@@ -626,7 +640,7 @@ mapred(Pid, Inputs, Query) ->
                     {error, {badqterm, mapred_queryterm()}} |
                     {error, timeout} |
                     {error, term()}.
-mapred(Pid, Inputs, Query, Timeout) ->
+mapred(Pid, Inputs, Query, Timeout)                                                                                                               ->
     mapred(Pid, Inputs, Query, Timeout, default_timeout(mapred_call_timeout)).
 
 %% @doc Perform a MapReduce job across the cluster with a job and
@@ -639,7 +653,7 @@ mapred(Pid, Inputs, Query, Timeout) ->
                     {error, {badqterm, mapred_queryterm()}} |
                     {error, timeout} |
                     {error, term()}.
-mapred(Pid, Inputs, Query, Timeout, CallTimeout) ->
+mapred(Pid, Inputs, Query, Timeout, CallTimeout)                                                                                                  ->
     case mapred_stream(Pid, Inputs, Query, self(), Timeout, CallTimeout) of
         {ok, ReqId} ->
             wait_for_mapred(ReqId, Timeout);
@@ -659,7 +673,7 @@ mapred(Pid, Inputs, Query, Timeout, CallTimeout) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_stream(Pid, Inputs, Query, ClientPid) ->
+mapred_stream(Pid, Inputs, Query, ClientPid)                                                                                                      ->
     mapred_stream(Pid, Inputs, Query, ClientPid, default_timeout(mapred_stream_timeout)).
 
 %% @doc Perform a streaming MapReduce job with a timeout across the cluster.
@@ -674,7 +688,7 @@ mapred_stream(Pid, Inputs, Query, ClientPid) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_stream(Pid, Inputs, Query, ClientPid, Timeout) ->
+mapred_stream(Pid, Inputs, Query, ClientPid, Timeout)                                                                                             ->
     mapred_stream(Pid, Inputs, Query, ClientPid, Timeout,
                   default_timeout(mapred_stream_call_timeout)).
 
@@ -692,22 +706,22 @@ mapred_stream(Pid, Inputs, Query, ClientPid, Timeout) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_stream(Pid, {index,Bucket,Name,Key}, Query, ClientPid, Timeout, CallTimeout) when is_tuple(Name) ->
+mapred_stream(Pid, {index,Bucket,Name,Key}, Query, ClientPid, Timeout, CallTimeout) when is_tuple(Name)                                           ->
     Index = riakc_obj:index_id_to_bin(Name),
     mapred_stream(Pid, {index,Bucket,Index,Key}, Query, ClientPid, Timeout, CallTimeout);
-mapred_stream(Pid, {index,Bucket,Name,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout) when is_tuple(Name) ->
+mapred_stream(Pid, {index,Bucket,Name,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout) when is_tuple(Name)                               ->
     Index = riakc_obj:index_id_to_bin(Name),
     mapred_stream(Pid, {index,Bucket,Index,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout);
-mapred_stream(Pid, {index,Bucket,Name,Key}, Query, ClientPid, Timeout, CallTimeout) when is_binary(Name) andalso is_integer(Key) ->
+mapred_stream(Pid, {index,Bucket,Name,Key}, Query, ClientPid, Timeout, CallTimeout) when is_binary(Name) andalso is_integer(Key)                  ->
     BinKey = list_to_binary(integer_to_list(Key)),
     mapred_stream(Pid, {index,Bucket,Name,BinKey}, Query, ClientPid, Timeout, CallTimeout);
 mapred_stream(Pid, {index,Bucket,Name,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout) when is_binary(Name) andalso is_integer(StartKey) ->
     BinStartKey = list_to_binary(integer_to_list(StartKey)),
     mapred_stream(Pid, {index,Bucket,Name,BinStartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout);
-mapred_stream(Pid, {index,Bucket,Name,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout) when is_binary(Name) andalso is_integer(EndKey) ->
+mapred_stream(Pid, {index,Bucket,Name,StartKey,EndKey}, Query, ClientPid, Timeout, CallTimeout) when is_binary(Name) andalso is_integer(EndKey)   ->
     BinEndKey = list_to_binary(integer_to_list(EndKey)),
     mapred_stream(Pid, {index,Bucket,Name,StartKey,BinEndKey}, Query, ClientPid, Timeout, CallTimeout);
-mapred_stream(Pid, Inputs, Query, ClientPid, Timeout, _CallTimeout) ->
+mapred_stream(Pid, Inputs, Query, ClientPid, Timeout, _CallTimeout)                                                                               ->
     MapRed = [{'inputs', Inputs},
               {'query', Query},
               {'timeout', Timeout}],
@@ -722,7 +736,7 @@ mapred_stream(Pid, Inputs, Query, ClientPid, Timeout, _CallTimeout) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_bucket(Pid, Bucket, Query) ->
+mapred_bucket(Pid, Bucket, Query)                                                                                                                 ->
     mapred_bucket(Pid, Bucket, Query, default_timeout(mapred_bucket_timeout)).
 
 %% @doc Perform a MapReduce job against a bucket with a timeout
@@ -735,7 +749,7 @@ mapred_bucket(Pid, Bucket, Query) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_bucket(Pid, Bucket, Query, Timeout) ->
+mapred_bucket(Pid, Bucket, Query, Timeout)                                                                                                        ->
     mapred_bucket(Pid, Bucket, Query, Timeout, default_timeout(mapred_bucket_call_timeout)).
 
 %% @doc Perform a MapReduce job against a bucket with a timeout
@@ -748,7 +762,7 @@ mapred_bucket(Pid, Bucket, Query, Timeout) ->
                            {error, {badqterm, mapred_queryterm()}} |
                            {error, timeout} |
                            {error, Err :: term()}.
-mapred_bucket(Pid, Bucket, Query, Timeout, CallTimeout) ->
+mapred_bucket(Pid, Bucket, Query, Timeout, CallTimeout)                                                                                           ->
     case mapred_bucket_stream(Pid, Bucket, Query, self(), Timeout, CallTimeout) of
         {ok, ReqId} ->
             wait_for_mapred(ReqId, Timeout);
@@ -767,7 +781,7 @@ mapred_bucket(Pid, Bucket, Query, Timeout, CallTimeout) ->
 -spec mapred_bucket_stream(ConnectionPid::pid(), bucket(), [mapred_queryterm()], ClientPid::pid(), timeout()) ->
                                   {ok, req_id()} |
                                   {error, term()}.
-mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout) ->
+mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout)                                                                                      ->
     mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout,
                          default_timeout(mapred_bucket_stream_call_timeout)).
 
@@ -781,7 +795,7 @@ mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout) ->
 %% @deprecated because `CallTimeout' is ignored
 -spec mapred_bucket_stream(ConnectionPid::pid(), bucket(), [mapred_queryterm()], ClientPid::pid(), timeout(), timeout()) ->
                                   {ok, req_id()} | {error, term()}.
-mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout, _CallTimeout) ->
+mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout, _CallTimeout)                                                                        ->
     MapRed = [{'inputs', Bucket},
               {'query', Query},
               {'timeout', Timeout}],
@@ -792,14 +806,14 @@ mapred_bucket_stream(Pid, Bucket, Query, ClientPid, Timeout, _CallTimeout) ->
 %%      unless executed against a Riak Search cluster.
 -spec search(pid(), binary(), binary()) ->
                     {ok, search_result()} | {error, term()}.
-search(Pid, Index, SearchQuery) ->
+search(Pid, Index, SearchQuery)                                                                                                                   ->
     search(Pid, Index, SearchQuery, []).
 
 %% @doc Execute a search query. This command will return an error
 %%      unless executed against a Riak Search cluster.
 -spec search(pid(), binary(), binary(), search_options()) ->
                     {ok, search_result()} | {error, term()}.
-search(Pid, Index, SearchQuery, Options) ->
+search(Pid, Index, SearchQuery, Options)                                                                                                          ->
     Timeout = default_timeout(search_timeout),
     search(Pid, Index, SearchQuery, Options, Timeout).
 
@@ -807,7 +821,7 @@ search(Pid, Index, SearchQuery, Options) ->
 %%      unless executed against a Riak Search cluster.
 -spec search(pid(), binary(), binary(), search_options(), timeout()) ->
                     {ok, search_result()} | {error, term()}.
-search(Pid, Index, SearchQuery, Options, Timeout) ->
+search(Pid, Index, SearchQuery, Options, Timeout)                                                                                                 ->
     CallTimeout = default_timeout(search_call_timeout),
     search(Pid, Index, SearchQuery, Options, Timeout, CallTimeout).
 
@@ -816,25 +830,25 @@ search(Pid, Index, SearchQuery, Options, Timeout) ->
 %% @deprecated because `CallTimeout' is ignored
 -spec search(pid(), binary(), binary(), search_options(), timeout(), timeout()) ->
                     {ok, search_result()} | {error, term()}.
-search(Pid, Index, SearchQuery, Options, Timeout, _CallTimeout) ->
+search(Pid, Index, SearchQuery, Options, Timeout, _CallTimeout)                                                                                   ->
     Req = search_options(Options, #rpbsearchqueryreq{q = SearchQuery, index = Index}),
     call_infinity(Pid, {req, Req, Timeout}).
 
 -spec get_search_schema(pid(), binary(), search_admin_opts()) ->
-                    {ok, search_schema()} | {error, term()}.
-get_search_schema(Pid, SchemaName, Opts) ->
+                               {ok, search_schema()} | {error, term()}.
+get_search_schema(Pid, SchemaName, Opts)                                                                                                          ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     Req = #rpbyokozunaschemagetreq{ name = SchemaName },
     call_infinity(Pid, {req, Req, Timeout}).
 
 -spec get_search_schema(pid(), binary()) ->
-                    {ok, search_schema()} | {error, term()}.
-get_search_schema(Pid, SchemaName) ->
+                               {ok, search_schema()} | {error, term()}.
+get_search_schema(Pid, SchemaName)                                                                                                                ->
     get_search_schema(Pid, SchemaName, []).
 
 -spec get_search_index(pid(), binary(), search_admin_opts()) ->
-                    {ok, search_index()} | {error, term()}.
-get_search_index(Pid, Index, Opts) ->
+                              {ok, search_index()} | {error, term()}.
+get_search_index(Pid, Index, Opts)                                                                                                                ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     Req = #rpbyokozunaindexgetreq{ name = Index },
     Results = call_infinity(Pid, {req, Req, Timeout}),
@@ -847,74 +861,74 @@ get_search_index(Pid, Index, Opts) ->
     end.
 
 -spec get_search_index(pid(), binary()) ->
-                    {ok, search_index()} | {error, term()}.
-get_search_index(Pid, Index) ->
+                              {ok, search_index()} | {error, term()}.
+get_search_index(Pid, Index)                                                                                                                      ->
     get_search_index(Pid, Index, []).
 
 -spec list_search_indexes(pid(), search_admin_opts()) ->
-                    {ok, [search_index()]} | {error, term()}.
-list_search_indexes(Pid, Opts) ->
+                                 {ok, [search_index()]} | {error, term()}.
+list_search_indexes(Pid, Opts)                                                                                                                    ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     call_infinity(Pid, {req, #rpbyokozunaindexgetreq{}, Timeout}).
 
 -spec list_search_indexes(pid()) ->
-                    {ok, [search_index()]} | {error, term()}.
-list_search_indexes(Pid) ->
+                                 {ok, [search_index()]} | {error, term()}.
+list_search_indexes(Pid)                                                                                                                          ->
     list_search_indexes(Pid, []).
 
 %% @doc Create a schema, which is a required component of an index.
 -spec create_search_schema(pid(), binary(), binary()) ->
-                    ok | {error, term()}.
-create_search_schema(Pid, SchemaName, Content) ->
+                                  ok | {error, term()}.
+create_search_schema(Pid, SchemaName, Content)                                                                                                    ->
     create_search_schema(Pid, SchemaName, Content, []).
 
 %% @doc Create a schema, which is a required component of an index.
 -spec create_search_schema(pid(), binary(), binary(), search_admin_opts()) ->
-                    ok | {error, term()}.
-create_search_schema(Pid, SchemaName, Content, Opts) ->
+                                  ok | {error, term()}.
+create_search_schema(Pid, SchemaName, Content, Opts)                                                                                              ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     Req = #rpbyokozunaschemaputreq{
-        schema = #rpbyokozunaschema{name = SchemaName, content = Content}
-    },
+             schema = #rpbyokozunaschema{name = SchemaName, content = Content}
+            },
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc Create a search index.
 -spec create_search_index(pid(), binary()) ->
-                    ok | {error, term()}.
-create_search_index(Pid, Index) ->
+                                 ok | {error, term()}.
+create_search_index(Pid, Index)                                                                                                                   ->
     create_search_index(Pid, Index, <<>>, []).
 
 %% @doc Create a search index.
 -spec create_search_index(pid(), binary(), binary(), search_admin_opts()) ->
-                    ok | {error, term()}.
-create_search_index(Pid, Index, SchemaName, Opts) ->
+                                 ok | {error, term()}.
+create_search_index(Pid, Index, SchemaName, Opts)                                                                                                 ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     NVal = proplists:get_value(n_val, Opts),
     Req = #rpbyokozunaindexputreq{
-        index = #rpbyokozunaindex{name = Index,
-                                  schema = SchemaName,
-                                  n_val = NVal}
-    },
+             index = #rpbyokozunaindex{name = Index,
+                                       schema = SchemaName,
+                                       n_val = NVal}
+            },
     call_infinity(Pid, {req, Req, Timeout}).
 
 
 %% @doc Delete a search index.
 -spec delete_search_index(pid(), binary()) ->
-                    ok | {error, term()}.
-delete_search_index(Pid, Index) ->
+                                 ok | {error, term()}.
+delete_search_index(Pid, Index)                                                                                                                   ->
     delete_search_index(Pid, Index, []).
 
 %% @doc Delete a search index.
 -spec delete_search_index(pid(), binary(), search_admin_opts()) ->
-                    ok | {error, term()}.
-delete_search_index(Pid, Index, Opts) ->
+                                 ok | {error, term()}.
+delete_search_index(Pid, Index, Opts)                                                                                                             ->
     Timeout = proplists:get_value(timeout, Opts, default_timeout(search_timeout)),
     Req = #rpbyokozunaindexdeletereq{name = Index},
     call_infinity(Pid, {req, Req, Timeout}).
 
 -spec set_search_index(pid(), bucket(), binary()) ->
-                    ok | {error, term()}.
-set_search_index(Pid, Bucket, Index) ->
+                              ok | {error, term()}.
+set_search_index(Pid, Bucket, Index)                                                                                                              ->
     set_bucket(Pid, Bucket, [{search_index, Index}]).
 
 
@@ -926,7 +940,7 @@ set_search_index(Pid, Bucket, Index) ->
 %% @see get_index_eq/4
 -spec get_index(pid(), bucket(), binary() | secondary_index_id(), key() | integer()) ->
                        {ok, index_results()} | {error, term()}.
-get_index(Pid, Bucket, Index, Key) ->
+get_index(Pid, Bucket, Index, Key)                                                                                                                ->
     get_index_eq(Pid, Bucket, Index, Key).
 
 %% @doc Execute a secondary index equality query with specified
@@ -936,7 +950,7 @@ get_index(Pid, Bucket, Index, Key) ->
 %% @see get_index_eq/5
 -spec get_index(pid(), bucket(), binary() | secondary_index_id(), key() | integer(), timeout(), timeout()) ->
                        {ok, index_results()} | {error, term()}.
-get_index(Pid, Bucket, Index, Key, Timeout, _CallTimeout) ->
+get_index(Pid, Bucket, Index, Key, Timeout, _CallTimeout)                                                                                         ->
     get_index_eq(Pid, Bucket, Index, Key, [{timeout, Timeout}]).
 
 %% @doc Execute a secondary index range query.
@@ -945,7 +959,7 @@ get_index(Pid, Bucket, Index, Key, Timeout, _CallTimeout) ->
 %% @see get_index_range/5
 -spec get_index(pid(), bucket(), binary() | secondary_index_id(), key() | integer(), key() | integer()) ->
                        {ok, index_results()} | {error, term()}.
-get_index(Pid, Bucket, Index, StartKey, EndKey) ->
+get_index(Pid, Bucket, Index, StartKey, EndKey)                                                                                                   ->
     get_index_range(Pid, Bucket, Index, StartKey, EndKey).
 
 %% @doc Execute a secondary index range query with specified
@@ -956,15 +970,15 @@ get_index(Pid, Bucket, Index, StartKey, EndKey) ->
 -spec get_index(pid(), bucket(), binary() | secondary_index_id(), key() | integer() | list(),
                 key() | integer() | list(), timeout(), timeout()) ->
                        {ok, index_results()} | {error, term()}.
-get_index(Pid, Bucket, Index, StartKey, EndKey, Timeout, _CallTimeout) ->
+get_index(Pid, Bucket, Index, StartKey, EndKey, Timeout, _CallTimeout)                                                                            ->
     get_index_range(Pid, Bucket, Index, StartKey, EndKey, [{timeout, Timeout}]).
 
 %% @doc Execute a secondary index equality query.
 %% equivalent to all defaults for the options.
 %% @see get_index_eq/5. for options and their effect
 -spec get_index_eq(pid(), bucket(), binary() | secondary_index_id(), key() | integer()) ->
-                       {ok, index_results()} | {error, term()}.
-get_index_eq(Pid, Bucket, Index, Key) ->
+                          {ok, index_results()} | {error, term()}.
+get_index_eq(Pid, Bucket, Index, Key)                                                                                                             ->
     get_index_eq(Pid, Bucket, Index, Key, []).
 
 %% @doc Execute a secondary index equality query with specified options
@@ -978,15 +992,15 @@ get_index_eq(Pid, Bucket, Index, Key) ->
 %% </dl>
 %% @end
 -spec get_index_eq(pid(), bucket(), binary() | secondary_index_id(), key() | integer(), index_opts()) ->
-                       {ok, index_results()} | {error, term()}.
-get_index_eq(Pid, Bucket, {binary_index, Name}, Key, Opts) when is_binary(Key) ->
+                          {ok, index_results()} | {error, term()}.
+get_index_eq(Pid, Bucket, {binary_index, Name}, Key, Opts) when is_binary(Key)                                                                    ->
     Index = list_to_binary(lists:append([Name, "_bin"])),
     get_index_eq(Pid, Bucket, Index, Key, Opts);
-get_index_eq(Pid, Bucket, {integer_index, Name}, Key, Opts) when is_integer(Key) ->
+get_index_eq(Pid, Bucket, {integer_index, Name}, Key, Opts) when is_integer(Key)                                                                  ->
     Index = list_to_binary(lists:append([Name, "_int"])),
     BinKey = list_to_binary(integer_to_list(Key)),
     get_index_eq(Pid, Bucket, Index, BinKey, Opts);
-get_index_eq(Pid, Bucket, Index, Key, Opts) ->
+get_index_eq(Pid, Bucket, Index, Key, Opts)                                                                                                       ->
     Timeout = proplists:get_value(timeout, Opts),
     MaxResults = proplists:get_value(max_results, Opts),
     PgSort = proplists:get_value(pagination_sort, Opts),
@@ -1013,8 +1027,8 @@ get_index_eq(Pid, Bucket, Index, Key, Opts) ->
 
 %% @doc Execute a secondary index range query.
 -spec get_index_range(pid(), bucket(), binary() | secondary_index_id(), key() | integer(), key() | integer()) ->
-                       {ok, index_results()} | {error, term()}.
-get_index_range(Pid, Bucket, Index, StartKey, EndKey) ->
+                             {ok, index_results()} | {error, term()}.
+get_index_range(Pid, Bucket, Index, StartKey, EndKey)                                                                                             ->
     get_index_range(Pid, Bucket, Index, StartKey, EndKey, []).
 
 %% @doc Execute a secondary index range query with specified options.
@@ -1025,17 +1039,17 @@ get_index_range(Pid, Bucket, Index, StartKey, EndKey) ->
 %% @end
 %% @see get_index_eq/5. for effect of options.
 -spec get_index_range(pid(), bucket(), binary() | secondary_index_id(), key() | integer() | list(),
-                key() | integer() | list(), range_index_opts()) ->
-                       {ok, index_results()} | {error, term()}.
-get_index_range(Pid, Bucket, {binary_index, Name}, StartKey, EndKey, Opts) when is_binary(StartKey) andalso is_binary(EndKey) ->
+                      key() | integer() | list(), range_index_opts()) ->
+                             {ok, index_results()} | {error, term()}.
+get_index_range(Pid, Bucket, {binary_index, Name}, StartKey, EndKey, Opts) when is_binary(StartKey) andalso is_binary(EndKey)                     ->
     Index = list_to_binary(lists:append([Name, "_bin"])),
     get_index_range(Pid, Bucket, Index, StartKey, EndKey, Opts);
-get_index_range(Pid, Bucket, {integer_index, Name}, StartKey, EndKey, Opts) when is_integer(StartKey) andalso is_integer(EndKey) ->
+get_index_range(Pid, Bucket, {integer_index, Name}, StartKey, EndKey, Opts) when is_integer(StartKey) andalso is_integer(EndKey)                  ->
     Index = list_to_binary(lists:append([Name, "_int"])),
     BinStartKey = list_to_binary(integer_to_list(StartKey)),
     BinEndKey = list_to_binary(integer_to_list(EndKey)),
     get_index_range(Pid, Bucket, Index, BinStartKey, BinEndKey, Opts);
-get_index_range(Pid, Bucket, Index, StartKey, EndKey, Opts) ->
+get_index_range(Pid, Bucket, Index, StartKey, EndKey, Opts)                                                                                       ->
     Timeout = proplists:get_value(timeout, Opts),
     ReturnTerms = proplists:get_value(return_terms, Opts),
     TermRegex = proplists:get_value(term_regex, Opts),
@@ -1065,11 +1079,11 @@ get_index_range(Pid, Bucket, Index, StartKey, EndKey, Opts) ->
            end,
     call_infinity(Pid, Call).
 
-encode_2i(Value) when is_integer(Value) ->
+encode_2i(Value) when is_integer(Value)                                                                                                           ->
     list_to_binary(integer_to_list(Value));
-encode_2i(Value) when is_list(Value) ->
+encode_2i(Value) when is_list(Value)                                                                                                              ->
     list_to_binary(Value);
-encode_2i(Value) when is_binary(Value) ->
+encode_2i(Value) when is_binary(Value)                                                                                                            ->
     Value.
 
 %% @doc secret function, do not use, or I come to your house and keeel you.
@@ -1101,7 +1115,7 @@ cs_bucket_fold(Pid, Bucket, Opts) when is_pid(Pid), (is_binary(Bucket) orelse
 %% @doc Return the default timeout for an operation if none is provided.
 %%      Falls back to the default timeout.
 -spec default_timeout(timeout_name()) -> timeout().
-default_timeout(OpTimeout) ->
+default_timeout(OpTimeout)                                                                                                                        ->
     case application:get_env(riakc, OpTimeout) of
         {ok, EnvTimeout} ->
             EnvTimeout;
@@ -1117,13 +1131,13 @@ default_timeout(OpTimeout) ->
 %% @doc Send a pre-encoded msg over the protocol buffer connection
 %% Returns {ok, Response} or {error, Reason}
 -spec tunnel(pid(), msg_id(), iolist(), timeout()) -> {ok, binary()} | {error, term()}.
-tunnel(Pid, MsgId, Pkt, Timeout) ->
+tunnel(Pid, MsgId, Pkt, Timeout)                                                                                                                  ->
     Req = {tunneled, MsgId, Pkt},
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc increment the counter at `bucket', `key' by `amount'
 -spec counter_incr(pid(), bucket(), key(), integer()) -> ok.
-counter_incr(Pid, Bucket, Key, Amount) ->
+counter_incr(Pid, Bucket, Key, Amount)                                                                                                            ->
     counter_incr(Pid, Bucket, Key, Amount, []).
 
 %% @doc increment the counter at `Bucket', `Key' by `Amount'.
@@ -1131,8 +1145,8 @@ counter_incr(Pid, Bucket, Key, Amount) ->
 %% A counter increment is a lot like a riak `put' so the semantics
 %% are the same for the given options.
 -spec counter_incr(pid(), bucket(), key(), integer(), [write_quorum()]) ->
-    ok | {error, term()}.
-counter_incr(Pid, Bucket, Key, Amount, Options) ->
+                          ok | {error, term()}.
+counter_incr(Pid, Bucket, Key, Amount, Options)                                                                                                   ->
     {_, B} = maybe_bucket_type(Bucket),
     Req = counter_incr_options(Options, #rpbcounterupdatereq{bucket=B, key=Key, amount=Amount}),
     call_infinity(Pid, {req, Req, default_timeout(put_timeout)}).
@@ -1140,14 +1154,14 @@ counter_incr(Pid, Bucket, Key, Amount, Options) ->
 %% @doc get the current value of the counter at `Bucket', `Key'.
 -spec counter_val(pid(), bucket(), key()) ->
                          {ok, integer()} | {error, notfound}.
-counter_val(Pid, Bucket, Key) ->
+counter_val(Pid, Bucket, Key)                                                                                                                     ->
     counter_val(Pid, Bucket, Key, []).
 
 %% @doc get the current value of the counter at `Bucket', `Key' using
 %% the `read_qurom()' `Options' provided.
 -spec counter_val(pid(), bucket(), key(), [read_quorum()]) ->
                          {ok, integer()} | {error, term()}.
-counter_val(Pid, Bucket, Key, Options) ->
+counter_val(Pid, Bucket, Key, Options)                                                                                                            ->
     {_, B} = maybe_bucket_type(Bucket),
     Req = counter_val_options(Options, #rpbcountergetreq{bucket=B, key=Key}),
     call_infinity(Pid, {req, Req, default_timeout(get_timeout)}).
@@ -1156,14 +1170,14 @@ counter_val(Pid, Bucket, Key, Options) ->
 %% @doc Fetches the representation of a convergent datatype from Riak.
 -spec fetch_type(pid(), {BucketType::binary(), Bucket::binary()}, Key::binary()) ->
                         {ok, riakc_datatype:datatype()} | {error, term()}.
-fetch_type(Pid, BucketAndType, Key) ->
+fetch_type(Pid, BucketAndType, Key)                                                                                                               ->
     fetch_type(Pid, BucketAndType, Key, []).
 
 %% @doc Fetches the representation of a convergent datatype from Riak,
 %% using the given request options.
 -spec fetch_type(pid(), {BucketType::binary(), Bucket::binary()}, Key::binary(), [proplists:property()]) ->
                         {ok, riakc_datatype:datatype()} | {error, term()}.
-fetch_type(Pid, BucketAndType, Key, Options) ->
+fetch_type(Pid, BucketAndType, Key, Options)                                                                                                      ->
     Req = riak_pb_dt_codec:encode_fetch_request(BucketAndType, Key, Options),
     call_infinity(Pid, {req, Req, default_timeout(get_timeout)}).
 
@@ -1172,7 +1186,7 @@ fetch_type(Pid, BucketAndType, Key, Options) ->
 -spec update_type(pid(), {BucketType::binary(), Bucket::binary()}, Key::binary(), Update::riakc_datatype:update(term())) ->
                          ok | {ok, Key::binary()} | {ok, riakc_datatype:datatype()} |
                          {ok, Key::binary(), riakc_datatype:datatype()} | {error, term()}.
-update_type(Pid, BucketAndType, Key, Update) ->
+update_type(Pid, BucketAndType, Key, Update)                                                                                                      ->
     update_type(Pid, BucketAndType, Key, Update, []).
 
 %% @doc Updates the convergent datatype in Riak with local
@@ -1182,9 +1196,9 @@ update_type(Pid, BucketAndType, Key, Update) ->
                   Update::riakc_datatype:update(term()), [proplists:property()]) ->
                          ok | {ok, Key::binary()} | {ok, riakc_datatype:datatype()} |
                          {ok, Key::binary(), riakc_datatype:datatype()} | {error, term()}.
-update_type(_Pid, _BucketAndType, _Key, undefined, _Options) ->
+update_type(_Pid, _BucketAndType, _Key, undefined, _Options)                                                                                      ->
     {error, unmodified};
-update_type(Pid, BucketAndType, Key, {Type, Op, Context}, Options) ->
+update_type(Pid, BucketAndType, Key, {Type, Op, Context}, Options)                                                                                ->
     Req = riak_pb_dt_codec:encode_update_request(BucketAndType, Key, {Type, Op, Context}, Options),
     call_infinity(Pid, {req, Req, default_timeout(put_timeout)}).
 
@@ -1194,7 +1208,7 @@ update_type(Pid, BucketAndType, Key, {Type, Op, Context}, Options) ->
 -spec modify_type(pid(), fun((riakc_datatype:datatype()) -> riakc_datatype:datatype()),
                   {BucketType::binary(), Bucket::binary()}, Key::binary(), [proplists:property()]) ->
                          ok | {ok, riakc_datatype:datatype()} | {error, term()}.
-modify_type(Pid, Fun, BucketAndType, Key, Options) ->
+modify_type(Pid, Fun, BucketAndType, Key, Options)                                                                                                ->
     Create = proplists:get_value(create, Options, true),
     case fetch_type(Pid, BucketAndType, Key, Options) of
         {ok, Data} ->
@@ -1216,7 +1230,7 @@ modify_type(Pid, Fun, BucketAndType, Key, Options) ->
 %% ====================================================================
 
 %% @private
-init([Address, Port, Options]) ->
+init([Address, Port, Options])                                                                                                                    ->
     %% Schedule a reconnect as the first action.  If the server is up then
     %% the handle_info(reconnect) will run before any requests can be sent.
     State = parse_options(Options, #state{address = Address,
@@ -1236,88 +1250,88 @@ init([Address, Port, Options]) ->
     end.
 
 %% @private
-handle_call({req, Msg, Timeout}, From, State) when State#state.sock =:= undefined ->
+handle_call({req, Msg, Timeout}, From, State) when State#state.sock =:= undefined                                                                 ->
     case State#state.queue_if_disconnected of
         true ->
             {noreply, queue_request(new_request(Msg, From, Timeout), State)};
         false ->
             {reply, {error, disconnected}, State}
     end;
-handle_call({req, Msg, Timeout, Ctx}, From, State) when State#state.sock =:= undefined ->
+handle_call({req, Msg, Timeout, Ctx}, From, State) when State#state.sock =:= undefined                                                            ->
     case State#state.queue_if_disconnected of
         true ->
             {noreply, queue_request(new_request(Msg, From, Timeout, Ctx), State)};
         false ->
             {reply, {error, disconnected}, State}
     end;
-handle_call({req, Msg, Timeout}, From, State) when State#state.active =/= undefined ->
+handle_call({req, Msg, Timeout}, From, State) when State#state.active =/= undefined                                                               ->
     {noreply, queue_request(new_request(Msg, From, Timeout), State)};
-handle_call({req, Msg, Timeout, Ctx}, From, State) when State#state.active =/= undefined ->
+handle_call({req, Msg, Timeout, Ctx}, From, State) when State#state.active =/= undefined                                                          ->
     {noreply, queue_request(new_request(Msg, From, Timeout, Ctx), State)};
-handle_call({req, Msg, Timeout}, From, State) ->
+handle_call({req, Msg, Timeout}, From, State)                                                                                                     ->
     {noreply, send_request(new_request(Msg, From, Timeout), State)};
-handle_call({req, Msg, Timeout, Ctx}, From, State) ->
+handle_call({req, Msg, Timeout, Ctx}, From, State)                                                                                                ->
     {noreply, send_request(new_request(Msg, From, Timeout, Ctx), State)};
-handle_call(is_connected, _From, State) ->
+handle_call(is_connected, _From, State)                                                                                                           ->
     case State#state.sock of
         undefined ->
             {reply, {false, State#state.failed}, State};
         _ ->
             {reply, true, State}
     end;
-handle_call({set_options, Options}, _From, State) ->
+handle_call({set_options, Options}, _From, State)                                                                                                 ->
     {reply, ok, parse_options(Options, State)};
-handle_call(stop, _From, State) ->
+handle_call(stop, _From, State)                                                                                                                   ->
     _ = disconnect(State),
     {stop, normal, ok, State}.
 
 %% @private
-handle_info({tcp_error, _Socket, Reason}, State) ->
+handle_info({tcp_error, _Socket, Reason}, State)                                                                                                  ->
     error_logger:error_msg("PBC client TCP error for ~p:~p - ~p\n",
                            [State#state.address, State#state.port, Reason]),
     disconnect(State);
 
-handle_info({tcp_closed, _Socket}, State) ->
+handle_info({tcp_closed, _Socket}, State)                                                                                                         ->
     disconnect(State);
 
-handle_info({ssl_error, _Socket, Reason}, State) ->
+handle_info({ssl_error, _Socket, Reason}, State)                                                                                                  ->
     error_logger:error_msg("PBC client SSL error for ~p:~p - ~p\n",
                            [State#state.address, State#state.port, Reason]),
     disconnect(State);
 
-handle_info({ssl_closed, _Socket}, State) ->
+handle_info({ssl_closed, _Socket}, State)                                                                                                         ->
     disconnect(State);
 
 %% Make sure the two Sock's match.  If a request timed out, but there was
 %% a response queued up behind it we do not want to process it.  Instead
 %% it should drop through and be ignored.
 handle_info({Proto, Sock, Data}, State=#state{sock = Sock, active = Active})
-        when Proto == tcp; Proto == ssl ->
+  when Proto == tcp; Proto == ssl ->
     <<MsgCode:8, MsgData/binary>> = Data,
     Resp = case Active#request.msg of
-        {tunneled, _MsgID} ->
-            %% don't decode tunneled replies, we may not recognize the msgid
-            {MsgCode, MsgData};
-        _ ->
-            riak_pb_codec:decode(MsgCode, MsgData)
-    end,
+               {tunneled, _MsgID} ->
+                   %% don't decode tunneled replies, we may not recognize the msgid
+                   {MsgCode, MsgData};
+               _ ->
+                   riak_pb_codec:decode(MsgCode, MsgData)
+           end,
     NewState = case Resp of
-        #rpberrorresp{} ->
-            NewState1 = maybe_reply(on_error(Active, Resp, State)),
-            dequeue_request(NewState1#state{active = undefined});
-        _ ->
-            case process_response(Active, Resp, State) of
-                {reply, Response, NewState0} ->
-                    %% Send reply and get ready for the next request - send the next request
-                    %% if one is queued up
-                    cancel_req_timer(Active#request.tref),
-                    _ = send_caller(Response, NewState0#state.active),
-                    dequeue_request(NewState0#state{active = undefined});
-                {pending, NewState0} -> %% Request is still pending - do not queue up a new one
-                    NewActive = restart_req_timer(Active),
-                    NewState0#state{active = NewActive}
-            end
-    end,
+                   #rpberrorresp{} ->
+                       NewState1 = maybe_reply(on_error(Active, Resp, State)),
+                       dequeue_request(NewState1#state{active = undefined});
+                   _ ->
+                       case process_response(Active, Resp, State) of
+                           {reply, Response, NewState0} ->
+                               %% Send reply and get ready for the next request - send the next request
+                               %% if one is queued up
+                               cancel_req_timer(Active#request.tref),
+                               _ = send_caller(Response, NewState0#state.active),
+                               dequeue_request(NewState0#state{active = undefined});
+                           {pending, NewState0} -> %% Request is still pending - do not queue up a new one
+                               NewActive = restart_req_timer(Active),
+                               NewState0#state{active = NewActive}
+                       end
+               end,
     case State#state.transport of
         gen_tcp ->
             ok = inet:setopts(Sock, [{active, once}]);
@@ -1325,7 +1339,7 @@ handle_info({Proto, Sock, Data}, State=#state{sock = Sock, active = Active})
             ok = ssl:setopts(Sock, [{active, once}])
     end,
     {noreply, NewState};
-handle_info({req_timeout, Ref}, State) ->
+handle_info({req_timeout, Ref}, State)                                                                                                            ->
     case State#state.active of %%
         undefined ->
             {noreply, remove_queued_request(Ref, State)};
@@ -1338,7 +1352,7 @@ handle_info({req_timeout, Ref}, State) ->
                     {noreply, remove_queued_request(Ref, State)}
             end
     end;
-handle_info(reconnect, State) ->
+handle_info(reconnect, State)                                                                                                                     ->
     case connect(State) of
         {ok, NewState} ->
             {noreply, dequeue_request(NewState)};
@@ -1347,18 +1361,18 @@ handle_info(reconnect, State) ->
             NewState = State#state{failed = orddict:update_counter(Reason, 1, State#state.failed)},
             disconnect(NewState)
     end;
-handle_info(_, State) ->
+handle_info(_, State)                                                                                                                             ->
     {noreply, State}.
 
 %% @private
-handle_cast(_Msg, State) ->
+handle_cast(_Msg, State)                                                                                                                          ->
     {noreply, State}.
 
 %% @private
-terminate(_Reason, _State) -> ok.
+terminate(_Reason, _State)                                                                                                                        -> ok.
 
 %% @private
-code_change(_OldVsn, State, _Extra) -> {ok, State}.
+code_change(_OldVsn, State, _Extra)                                                                                                               -> {ok, State}.
 
 %% ====================================================================
 %% internal functions
@@ -1366,7 +1380,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %% @private
 %% Parse options
-parse_options([], State) ->
+parse_options([], State)                                                                                                                          ->
     %% Once all options are parsed, make sure auto_reconnect is enabled
     %% if queue_if_disconnected is enabled.
     case State#state.queue_if_disconnected of
@@ -1375,38 +1389,38 @@ parse_options([], State) ->
         _ ->
             State
     end;
-parse_options([{connect_timeout, T}|Options], State) when is_integer(T) ->
+parse_options([{connect_timeout, T}|Options], State) when is_integer(T)                                                                           ->
     parse_options(Options, State#state{connect_timeout = T});
 parse_options([{queue_if_disconnected,Bool}|Options], State) when
       Bool =:= true; Bool =:= false ->
     parse_options(Options, State#state{queue_if_disconnected = Bool});
-parse_options([queue_if_disconnected|Options], State) ->
+parse_options([queue_if_disconnected|Options], State)                                                                                             ->
     parse_options([{queue_if_disconnected, true}|Options], State);
 parse_options([{auto_reconnect,Bool}|Options], State) when
       Bool =:= true; Bool =:= false ->
     parse_options(Options, State#state{auto_reconnect = Bool});
-parse_options([auto_reconnect|Options], State) ->
+parse_options([auto_reconnect|Options], State)                                                                                                    ->
     parse_options([{auto_reconnect, true}|Options], State);
-parse_options([{keepalive,Bool}|Options], State) when is_boolean(Bool) ->
+parse_options([{keepalive,Bool}|Options], State) when is_boolean(Bool)                                                                            ->
     parse_options(Options, State#state{keepalive = Bool});
-parse_options([keepalive|Options], State) ->
+parse_options([keepalive|Options], State)                                                                                                         ->
     parse_options([{keepalive, false}|Options], State);
-parse_options([{credentials, User, Pass}|Options], State) ->
+parse_options([{credentials, User, Pass}|Options], State)                                                                                         ->
     parse_options(Options, State#state{credentials={User, Pass}});
-parse_options([{certfile, File}|Options], State) ->
+parse_options([{certfile, File}|Options], State)                                                                                                  ->
     parse_options(Options, State#state{certfile=File});
-parse_options([{cacertfile, File}|Options], State) ->
+parse_options([{cacertfile, File}|Options], State)                                                                                                ->
     parse_options(Options, State#state{cacertfile=File});
-parse_options([{keyfile, File}|Options], State) ->
+parse_options([{keyfile, File}|Options], State)                                                                                                   ->
     parse_options(Options, State#state{keyfile=File});
-parse_options([{ssl_opts, Opts}|Options], State) ->
+parse_options([{ssl_opts, Opts}|Options], State)                                                                                                  ->
     parse_options(Options, State#state{ssl_opts=Opts}).
 
-maybe_reply({reply, Reply, State}) ->
+maybe_reply({reply, Reply, State})                                                                                                                ->
     Request = State#state.active,
     NewRequest = send_caller(Reply, Request),
     State#state{active = NewRequest};
-maybe_reply({noreply, State}) ->
+maybe_reply({noreply, State})                                                                                                                     ->
     State.
 
 %% @private
@@ -1416,29 +1430,29 @@ send_caller(Msg, #request{ctx = {ReqId, Client},
                           from = undefined}=Request) ->
     Client ! {ReqId, Msg},
     Request;
-send_caller(Msg, #request{from = From}=Request) when From /= undefined ->
+send_caller(Msg, #request{from = From}=Request) when From /= undefined                                                                            ->
     gen_server:reply(From, Msg),
     Request#request{from = undefined}.
 
-get_options([], Req) ->
+get_options([], Req)                                                                                                                              ->
     Req;
-get_options([{basic_quorum, BQ} | Rest], Req) ->
+get_options([{basic_quorum, BQ} | Rest], Req)                                                                                                     ->
     get_options(Rest, Req#rpbgetreq{basic_quorum = BQ});
-get_options([{notfound_ok, NFOk} | Rest], Req) ->
+get_options([{notfound_ok, NFOk} | Rest], Req)                                                                                                    ->
     get_options(Rest, Req#rpbgetreq{notfound_ok = NFOk});
-get_options([{r, R} | Rest], Req) ->
+get_options([{r, R} | Rest], Req)                                                                                                                 ->
     get_options(Rest, Req#rpbgetreq{r = riak_pb_kv_codec:encode_quorum(R)});
-get_options([{pr, PR} | Rest], Req) ->
+get_options([{pr, PR} | Rest], Req)                                                                                                               ->
     get_options(Rest, Req#rpbgetreq{pr = riak_pb_kv_codec:encode_quorum(PR)});
-get_options([{timeout, T} | Rest], Req) when is_integer(T)->
+get_options([{timeout, T} | Rest], Req) when is_integer(T)                                                                                        ->
     get_options(Rest, Req#rpbgetreq{timeout = T});
-get_options([{timeout, _T} | _Rest], _Req) ->
+get_options([{timeout, _T} | _Rest], _Req)                                                                                                        ->
     erlang:error(badarg);
-get_options([{if_modified, VClock} | Rest], Req) ->
+get_options([{if_modified, VClock} | Rest], Req)                                                                                                  ->
     get_options(Rest, Req#rpbgetreq{if_modified = VClock});
-get_options([head | Rest], Req) ->
+get_options([head | Rest], Req)                                                                                                                   ->
     get_options(Rest, Req#rpbgetreq{head = true});
-get_options([deletedvclock | Rest], Req) ->
+get_options([deletedvclock | Rest], Req)                                                                                                          ->
     get_options(Rest, Req#rpbgetreq{deletedvclock = true});
 get_options([{n_val, N} | Rest], Req)
   when is_integer(N), N > 0 ->
@@ -1446,32 +1460,42 @@ get_options([{n_val, N} | Rest], Req)
 get_options([{sloppy_quorum, Bool} | Rest], Req)
   when Bool == true; Bool == false ->
     get_options(Rest, Req#rpbgetreq{sloppy_quorum = Bool});
-get_options([{_, _} | _Rest], _Req) ->
+get_options([{_, _} | _Rest], _Req)                                                                                                               ->
     erlang:error(badarg).
 
-put_options([], Req) ->
+scan_options([], Req)                                                                                                                             ->
     Req;
-put_options([{w, W} | Rest], Req) ->
-    put_options(Rest, Req#rpbputreq{w = riak_pb_kv_codec:encode_quorum(W)});
-put_options([{dw, DW} | Rest], Req) ->
-    put_options(Rest, Req#rpbputreq{dw = riak_pb_kv_codec:encode_quorum(DW)});
-put_options([{pw, PW} | Rest], Req) ->
-    put_options(Rest, Req#rpbputreq{pw = riak_pb_kv_codec:encode_quorum(PW)});
-put_options([{timeout, T} | Rest], Req) when is_integer(T) ->
-    put_options(Rest, Req#rpbputreq{timeout = T});
-put_options([{timeout, _T} | _Rest], _Req) ->
+scan_options([{timeout, T} | Rest], Req) when is_integer(T)                                                                                       ->
+    scan_options(Rest, Req#rpbscanreq{timeout = T});
+scan_options([{timeout, _T} | _Rest], _Req)                                                                                                       ->
     erlang:error(badarg);
-put_options([return_body | Rest], Req) ->
+scan_options([{_, _} | _Rest], _Req)                                                                                                              ->
+    erlang:error(badarg).
+
+
+put_options([], Req)                                                                                                                              ->
+    Req;
+put_options([{w, W} | Rest], Req)                                                                                                                 ->
+    put_options(Rest, Req#rpbputreq{w = riak_pb_kv_codec:encode_quorum(W)});
+put_options([{dw, DW} | Rest], Req)                                                                                                               ->
+    put_options(Rest, Req#rpbputreq{dw = riak_pb_kv_codec:encode_quorum(DW)});
+put_options([{pw, PW} | Rest], Req)                                                                                                               ->
+    put_options(Rest, Req#rpbputreq{pw = riak_pb_kv_codec:encode_quorum(PW)});
+put_options([{timeout, T} | Rest], Req) when is_integer(T)                                                                                        ->
+    put_options(Rest, Req#rpbputreq{timeout = T});
+put_options([{timeout, _T} | _Rest], _Req)                                                                                                        ->
+    erlang:error(badarg);
+put_options([return_body | Rest], Req)                                                                                                            ->
     put_options(Rest, Req#rpbputreq{return_body = 1});
-put_options([return_head | Rest], Req) ->
+put_options([return_head | Rest], Req)                                                                                                            ->
     put_options(Rest, Req#rpbputreq{return_head = true});
-put_options([if_not_modified | Rest], Req) ->
+put_options([if_not_modified | Rest], Req)                                                                                                        ->
     put_options(Rest, Req#rpbputreq{if_not_modified = true});
-put_options([if_none_match | Rest], Req) ->
+put_options([if_none_match | Rest], Req)                                                                                                          ->
     put_options(Rest, Req#rpbputreq{if_none_match = true});
-put_options([asis | Rest], Req) ->
+put_options([asis | Rest], Req)                                                                                                                   ->
     put_options(Rest, Req#rpbputreq{asis = true});
-put_options([{asis, Val} | Rest], Req) when is_boolean(Val) ->
+put_options([{asis, Val} | Rest], Req) when is_boolean(Val)                                                                                       ->
     put_options(Rest, Req#rpbputreq{asis = Val});
 put_options([{n_val, N} | Rest], Req)
   when is_integer(N), N > 0 ->
@@ -1479,27 +1503,27 @@ put_options([{n_val, N} | Rest], Req)
 put_options([{sloppy_quorum, Bool} | Rest], Req)
   when Bool == true; Bool == false ->
     put_options(Rest, Req#rpbputreq{sloppy_quorum = Bool});
-put_options([{_, _} | _Rest], _Req) ->
+put_options([{_, _} | _Rest], _Req)                                                                                                               ->
     erlang:error(badarg).
 
 
-delete_options([], Req) ->
+delete_options([], Req)                                                                                                                           ->
     Req;
-delete_options([{rw, RW} | Rest], Req) ->
+delete_options([{rw, RW} | Rest], Req)                                                                                                            ->
     delete_options(Rest, Req#rpbdelreq{rw = riak_pb_kv_codec:encode_quorum(RW)});
-delete_options([{r, R} | Rest], Req) ->
+delete_options([{r, R} | Rest], Req)                                                                                                              ->
     delete_options(Rest, Req#rpbdelreq{r = riak_pb_kv_codec:encode_quorum(R)});
-delete_options([{w, W} | Rest], Req) ->
+delete_options([{w, W} | Rest], Req)                                                                                                              ->
     delete_options(Rest, Req#rpbdelreq{w = riak_pb_kv_codec:encode_quorum(W)});
-delete_options([{pr, PR} | Rest], Req) ->
+delete_options([{pr, PR} | Rest], Req)                                                                                                            ->
     delete_options(Rest, Req#rpbdelreq{pr = riak_pb_kv_codec:encode_quorum(PR)});
-delete_options([{pw, PW} | Rest], Req) ->
+delete_options([{pw, PW} | Rest], Req)                                                                                                            ->
     delete_options(Rest, Req#rpbdelreq{pw = riak_pb_kv_codec:encode_quorum(PW)});
-delete_options([{dw, DW} | Rest], Req) ->
+delete_options([{dw, DW} | Rest], Req)                                                                                                            ->
     delete_options(Rest, Req#rpbdelreq{dw = riak_pb_kv_codec:encode_quorum(DW)});
-delete_options([{timeout, T} | Rest], Req) when is_integer(T) ->
+delete_options([{timeout, T} | Rest], Req) when is_integer(T)                                                                                     ->
     delete_options(Rest, Req#rpbdelreq{timeout = T});
-delete_options([{timeout, _T} | _Rest], _Req) ->
+delete_options([{timeout, _T} | _Rest], _Req)                                                                                                     ->
     erlang:error(badarg);
 delete_options([{n_val, N} | Rest], Req)
   when is_integer(N), N > 0 ->
@@ -1507,54 +1531,54 @@ delete_options([{n_val, N} | Rest], Req)
 delete_options([{sloppy_quorum, Bool} | Rest], Req)
   when Bool == true; Bool == false ->
     delete_options(Rest, Req#rpbdelreq{sloppy_quorum = Bool});
-delete_options([{_, _} | _Rest], _Req) ->
+delete_options([{_, _} | _Rest], _Req)                                                                                                            ->
     erlang:error(badarg).
 
-search_options([], Req) ->
+search_options([], Req)                                                                                                                           ->
     Req;
-search_options([{rows, Rows} | Rest], Req) ->
+search_options([{rows, Rows} | Rest], Req)                                                                                                        ->
     search_options(Rest, Req#rpbsearchqueryreq{rows=Rows});
-search_options([{start, Start} | Rest], Req) ->
+search_options([{start, Start} | Rest], Req)                                                                                                      ->
     search_options(Rest, Req#rpbsearchqueryreq{start=Start});
-search_options([{sort, Sort} | Rest], Req) ->
+search_options([{sort, Sort} | Rest], Req)                                                                                                        ->
     search_options(Rest, Req#rpbsearchqueryreq{sort=Sort});
-search_options([{filter, Filter} | Rest], Req) ->
+search_options([{filter, Filter} | Rest], Req)                                                                                                    ->
     search_options(Rest, Req#rpbsearchqueryreq{filter=Filter});
-search_options([{df, DF} | Rest], Req) ->
+search_options([{df, DF} | Rest], Req)                                                                                                            ->
     search_options(Rest, Req#rpbsearchqueryreq{df=DF});
-search_options([{op, OP} | Rest], Req) ->
+search_options([{op, OP} | Rest], Req)                                                                                                            ->
     search_options(Rest, Req#rpbsearchqueryreq{op=OP});
-search_options([{fl, FL} | Rest], Req) ->
+search_options([{fl, FL} | Rest], Req)                                                                                                            ->
     search_options(Rest, Req#rpbsearchqueryreq{fl=FL});
-search_options([{presort, Presort} | Rest], Req) ->
+search_options([{presort, Presort} | Rest], Req)                                                                                                  ->
     search_options(Rest, Req#rpbsearchqueryreq{presort=Presort});
-search_options([{_, _} | _Rest], _Req) ->
+search_options([{_, _} | _Rest], _Req)                                                                                                            ->
     erlang:error(badarg).
 
-counter_incr_options([], Req) ->
+counter_incr_options([], Req)                                                                                                                     ->
     Req;
-counter_incr_options([{w, W} | Rest], Req) ->
+counter_incr_options([{w, W} | Rest], Req)                                                                                                        ->
     counter_incr_options(Rest, Req#rpbcounterupdatereq{w=riak_pb_kv_codec:encode_quorum(W)});
-counter_incr_options([{dw, DW} | Rest], Req) ->
+counter_incr_options([{dw, DW} | Rest], Req)                                                                                                      ->
     counter_incr_options(Rest, Req#rpbcounterupdatereq{dw=riak_pb_kv_codec:encode_quorum(DW)});
-counter_incr_options([{pw, PW} | Rest], Req) ->
+counter_incr_options([{pw, PW} | Rest], Req)                                                                                                      ->
     counter_incr_options(Rest, Req#rpbcounterupdatereq{pw=riak_pb_kv_codec:encode_quorum(PW)});
-counter_incr_options([returnvalue | Rest], Req) ->
+counter_incr_options([returnvalue | Rest], Req)                                                                                                   ->
     counter_incr_options(Rest, Req#rpbcounterupdatereq{returnvalue=true});
-counter_incr_options([_ | _Rest], _Req) ->
+counter_incr_options([_ | _Rest], _Req)                                                                                                           ->
     erlang:error(badarg).
 
-counter_val_options([], Req) ->
+counter_val_options([], Req)                                                                                                                      ->
     Req;
-counter_val_options([{basic_quorum, BQ} | Rest], Req) ->
+counter_val_options([{basic_quorum, BQ} | Rest], Req)                                                                                             ->
     counter_val_options(Rest, Req#rpbcountergetreq{basic_quorum=BQ});
-counter_val_options([{notfound_ok, NFOK} | Rest], Req) ->
+counter_val_options([{notfound_ok, NFOK} | Rest], Req)                                                                                            ->
     counter_val_options(Rest, Req#rpbcountergetreq{notfound_ok=NFOK});
-counter_val_options([{r, R} | Rest], Req) ->
+counter_val_options([{r, R} | Rest], Req)                                                                                                         ->
     counter_val_options(Rest, Req#rpbcountergetreq{r=riak_pb_kv_codec:encode_quorum(R)});
-counter_val_options([{pr, PR} | Rest], Req) ->
+counter_val_options([{pr, PR} | Rest], Req)                                                                                                       ->
     counter_val_options(Rest, Req#rpbcountergetreq{pr=riak_pb_kv_codec:encode_quorum(PR)});
-counter_val_options([_ | _Rest], _Req) ->
+counter_val_options([_ | _Rest], _Req)                                                                                                            ->
     erlang:error(badarg).
 
 %% Process response from the server - passes back in the request and
@@ -1566,7 +1590,7 @@ counter_val_options([_ | _Rest], _Req) ->
 -spec process_response(#request{}, rpb_resp(), #state{}) ->
                               {reply, term(), #state{}} |
                               {pending, #state{}}.
-process_response(#request{msg = rpbpingreq}, rpbpingresp, State) ->
+process_response(#request{msg = rpbpingreq}, rpbpingresp, State)                                                                                  ->
     {reply, pong, State};
 process_response(#request{msg = rpbgetclientidreq},
                  #rpbgetclientidresp{client_id = ClientId}, State) ->
@@ -1577,26 +1601,26 @@ process_response(#request{msg = #rpbsetclientidreq{}},
 process_response(#request{msg = rpbgetserverinforeq},
                  #rpbgetserverinforesp{node = Node, server_version = ServerVersion}, State) ->
     NodeInfo = case Node of
-        undefined ->
-            [];
-        Node ->
-            [{node, Node}]
-    end,
+                   undefined ->
+                       [];
+                   Node ->
+                       [{node, Node}]
+               end,
     VersionInfo = case ServerVersion of
-        undefined ->
-            [];
-        ServerVersion ->
-            [{server_version, ServerVersion}]
-    end,
+                      undefined ->
+                          [];
+                      ServerVersion ->
+                          [{server_version, ServerVersion}]
+                  end,
     {reply, {ok, NodeInfo++VersionInfo}, State};
-process_response(#request{msg = #rpbgetreq{}}, rpbgetresp, State) ->
+process_response(#request{msg = #rpbgetreq{}}, rpbgetresp, State)                                                                                 ->
     %% server just returned the rpbgetresp code - no message was encoded
     {reply, {error, notfound}, State};
 process_response(#request{msg = #rpbgetreq{deletedvclock=true}},
                  #rpbgetresp{vclock=VC, content=[]}, State) ->
     %% server returned a notfound with a vector clock, meaning a tombstone
     {reply, {error, notfound, VC}, State};
-process_response(#request{msg = #rpbgetreq{}}, #rpbgetresp{unchanged=true}, State) ->
+process_response(#request{msg = #rpbgetreq{}}, #rpbgetresp{unchanged=true}, State)                                                                ->
     %% object was unchanged
     {reply, unchanged, State};
 process_response(#request{msg = #rpbgetreq{type = Type, bucket = Bucket, key = Key}},
@@ -1604,6 +1628,14 @@ process_response(#request{msg = #rpbgetreq{type = Type, bucket = Bucket, key = K
     Contents = riak_pb_kv_codec:decode_contents(RpbContents),
     B = maybe_make_bucket_type(Type, Bucket),
     {reply, {ok, riakc_obj:new_obj(B, Key, Vclock, Contents)}, State};
+
+process_response(#request{msg = #rpbscanreq{}}, rpbscanresp, State)                                                                                 ->
+    %% server just returned the rpbscanresp code - no message was encoded
+    {reply, {error, notfound}, State};
+process_response(#request{msg = #rpbscanreq{type = _Type, bucket = _Bucket, key = _Key}},
+                 #rpbscanresp{content = Pbc}, State) ->
+    Content = hd(Pbc),
+    {reply, {ok, Content#rpbcontent.value}, State};
 
 process_response(#request{msg = #rpbputreq{}},
                  rpbputresp, State) ->
@@ -1692,7 +1724,7 @@ process_response(#request{msg = #rpbmapredreq{content_type = ContentType}}=Reque
             {pending, State}
     end;
 
-process_response(#request{msg = #rpbindexreq{}}, rpbindexresp, State) ->
+process_response(#request{msg = #rpbindexreq{}}, rpbindexresp, State)                                                                             ->
     Results = ?INDEX_RESULTS{keys=[], continuation=undefined},
     {reply, {ok, Results}, State};
 process_response(#request{msg = #rpbindexreq{stream=true, return_terms=Terms}}=Request,
@@ -1701,17 +1733,17 @@ process_response(#request{msg = #rpbindexreq{stream=true, return_terms=Terms}}=R
     _ = send_caller(ToSend, Request),
     DoneResponse = {reply, {done, Cont}, State},
     case Done of
-                true -> DoneResponse;
-                _ -> {pending, State}
+        true -> DoneResponse;
+        _ -> {pending, State}
     end;
-process_response(#request{msg = #rpbindexreq{return_terms=Terms}}, #rpbindexresp{results=Results, keys=Keys, continuation=Cont}, State) ->
+process_response(#request{msg = #rpbindexreq{return_terms=Terms}}, #rpbindexresp{results=Results, keys=Keys, continuation=Cont}, State)           ->
     StreamResponse = process_index_response(Terms, Keys, Results),
     RegularResponse = index_stream_result_to_index_result(StreamResponse),
     RegularResponseWithContinuation = RegularResponse?INDEX_RESULTS{continuation=Cont},
     {reply, {ok, RegularResponseWithContinuation}, State};
-process_response(#request{msg = #rpbcsbucketreq{}}, rpbcsbucketresp, State) ->
+process_response(#request{msg = #rpbcsbucketreq{}}, rpbcsbucketresp, State)                                                                       ->
     {pending, State};
-process_response(#request{msg = #rpbcsbucketreq{bucket=Bucket}}=Request, #rpbcsbucketresp{objects=Objects, done=Done, continuation=Cont}, State) ->
+process_response(#request{msg = #rpbcsbucketreq{bucket=Bucket}}=Request, #rpbcsbucketresp{objects=Objects, done=Done, continuation=Cont}, State)  ->
     %% TEMP - cs specific message for fold_objects
     ToSend =  case Objects of
                   undefined -> {ok, []};
@@ -1731,7 +1763,7 @@ process_response(#request{msg = #rpbcsbucketreq{bucket=Bucket}}=Request, #rpbcsb
         true -> DoneResponse;
         _ -> {pending, State}
     end;
-process_response(#request{msg = #rpbsearchqueryreq{}}, prbsearchqueryresp, State) ->
+process_response(#request{msg = #rpbsearchqueryreq{}}, prbsearchqueryresp, State)                                                                 ->
     {reply, {error, notfound}, State};
 process_response(#request{msg = #rpbsearchqueryreq{index=Index}},
                  #rpbsearchqueryresp{docs=PBDocs,max_score=MaxScore,
@@ -1741,7 +1773,7 @@ process_response(#request{msg = #rpbsearchqueryreq{index=Index}},
     Result = #search_results{docs=Values, max_score=MaxScore, num_found=NumFound},
     {reply, {ok, Result}, State};
 
-process_response(#request{msg=#rpbresetbucketreq{}}, rpbresetbucketresp, State) ->
+process_response(#request{msg=#rpbresetbucketreq{}}, rpbresetbucketresp, State)                                                                   ->
     {reply, ok, State};
 
 process_response(#request{msg = #rpbcounterupdatereq{returnvalue=true}},
@@ -1790,7 +1822,7 @@ process_response(#request{msg = #dtupdatereq{op=Op, return_body=RB}},
             end,
     {reply, Reply, State};
 
-process_response(#request{msg={tunneled,_MsgId}}, Reply, State) ->
+process_response(#request{msg={tunneled,_MsgId}}, Reply, State)                                                                                   ->
     %% Tunneled msg response
     {reply, {ok, Reply}, State};
 
@@ -1815,7 +1847,7 @@ process_response(#request{msg = #rpbyokozunaindexgetreq{}},
     Results = [[{index,Index#rpbyokozunaindex.name},
                 {schema,Index#rpbyokozunaindex.schema},
                 {n_val,Index#rpbyokozunaindex.n_val}]
-        || Index <- Indexes ],
+               || Index <- Indexes ],
     {reply, {ok, Results}, State};
 
 process_response(#request{msg = #rpbyokozunaschemagetreq{}},
@@ -1823,28 +1855,28 @@ process_response(#request{msg = #rpbyokozunaschemagetreq{}},
     Result = [{name,Schema#rpbyokozunaschema.name}, {content,Schema#rpbyokozunaschema.content}],
     {reply, {ok, Result}, State};
 
-process_response(Request, Reply, State) ->
+process_response(Request, Reply, State)                                                                                                           ->
     %% Unknown request/response combo
     {reply, {error, {unknown_response, Request, Reply}}, State}.
 
 %% Helper for index responses
 -spec process_index_response(undefined | boolean(), list(), list()) ->
-    index_stream_result().
-process_index_response(undefined, Keys, _) ->
+                                    index_stream_result().
+process_index_response(undefined, Keys, _)                                                                                                        ->
     ?INDEX_STREAM_RESULT{keys=Keys};
-process_index_response(false, Keys, _) ->
+process_index_response(false, Keys, _)                                                                                                            ->
     ?INDEX_STREAM_RESULT{keys=Keys};
-process_index_response(true, [], Results) ->
+process_index_response(true, [], Results)                                                                                                         ->
     %% rpbpair is abused to send Value,Key pairs as Key, Value pairs
     %% in a 2i query the 'key' is the index value and the 'value'
     %% the indexed objects primary key
     Res = [{V, K} ||  #rpbpair{key=V, value=K} <- Results],
     ?INDEX_STREAM_RESULT{terms=Res};
-process_index_response(true, Keys, []) ->
+process_index_response(true, Keys, [])                                                                                                            ->
     ?INDEX_STREAM_RESULT{keys=Keys}.
 
 -spec index_stream_result_to_index_result(index_stream_result()) ->
-    index_results().
+                                                 index_results().
 index_stream_result_to_index_result(?INDEX_STREAM_RESULT{keys=Keys,
                                                          terms=Terms}) ->
     ?INDEX_RESULTS{keys=Keys,
@@ -1856,30 +1888,30 @@ index_stream_result_to_index_result(?INDEX_STREAM_RESULT{keys=Keys,
 after_send(#request{msg = #rpblistbucketsreq{}, ctx = {ReqId, _Client}},
            State) ->
     {reply, {ok, ReqId}, State};
-after_send(#request{msg = #rpblistkeysreq{}, ctx = {ReqId, _Client}}, State) ->
+after_send(#request{msg = #rpblistkeysreq{}, ctx = {ReqId, _Client}}, State)                                                                      ->
     {reply, {ok, ReqId}, State};
-after_send(#request{msg = #rpbmapredreq{}, ctx = {ReqId, _Client}}, State) ->
+after_send(#request{msg = #rpbmapredreq{}, ctx = {ReqId, _Client}}, State)                                                                        ->
     {reply, {ok, ReqId}, State};
-after_send(#request{msg = #rpbindexreq{stream=true}, ctx = {ReqId, _Client}}, State) ->
+after_send(#request{msg = #rpbindexreq{stream=true}, ctx = {ReqId, _Client}}, State)                                                              ->
     {reply, {ok, ReqId}, State};
-after_send(#request{msg = #rpbcsbucketreq{}, ctx = {ReqId, _Client}}, State) ->
+after_send(#request{msg = #rpbcsbucketreq{}, ctx = {ReqId, _Client}}, State)                                                                      ->
     {reply, {ok, ReqId}, State};
-after_send(_Request, State) ->
+after_send(_Request, State)                                                                                                                       ->
     {noreply, State}.
 
 %% Called on timeout for an operation
 %% @private
-on_timeout(_Request, State) ->
+on_timeout(_Request, State)                                                                                                                       ->
     {reply, {error, timeout}, State}.
 %%
 %% Called after receiving an error message - supports reruning
 %% an error for streaming calls
 %% @private
-on_error(_Request, ErrMsg, State) ->
+on_error(_Request, ErrMsg, State)                                                                                                                 ->
     {reply, fmt_err_msg(ErrMsg), State}.
 
 %% Format the PB encoded error message
-fmt_err_msg(ErrMsg) ->
+fmt_err_msg(ErrMsg)                                                                                                                               ->
     case ErrMsg#rpberrorresp.errcode of
         Code when Code =:= 0; Code =:= 1; Code =:= undefined ->
             {error, ErrMsg#rpberrorresp.errmsg};
@@ -1892,54 +1924,54 @@ fmt_err_msg(ErrMsg) ->
 
 %% Common code for sending a single bucket or multiple inputs map/request
 %% @private
-send_mapred_req(Pid, MapRed, ClientPid) ->
+send_mapred_req(Pid, MapRed, ClientPid)                                                                                                           ->
     ReqMsg = #rpbmapredreq{request = encode_mapred_req(MapRed),
                            content_type = <<"application/x-erlang-binary">>},
     ReqId = mk_reqid(),
     Timeout = proplists:get_value(timeout, MapRed, default_timeout(mapred_timeout)),
     Timeout1 = if
-           is_integer(Timeout) ->
-               %% Add an extra 100ms to the mapred timeout and use that
-               %% for the socket timeout. This should give the
-               %% map/reduce a chance to fail and let us know.
-               Timeout + 100;
-           true ->
-               Timeout
-           end,
+                   is_integer(Timeout) ->
+                       %% Add an extra 100ms to the mapred timeout and use that
+                       %% for the socket timeout. This should give the
+                       %% map/reduce a chance to fail and let us know.
+                       Timeout + 100;
+                   true ->
+                       Timeout
+               end,
     call_infinity(Pid, {req, ReqMsg, Timeout1, {ReqId, ClientPid}}).
 
 %% @private
 %% Make a new request that can be sent or queued
-new_request(Msg, From, Timeout) ->
+new_request(Msg, From, Timeout)                                                                                                                   ->
     Ref = make_ref(),
     #request{ref = Ref, msg = Msg, from = From, timeout = Timeout,
              tref = create_req_timer(Timeout, Ref)}.
-new_request(Msg, From, Timeout, Context) ->
+new_request(Msg, From, Timeout, Context)                                                                                                          ->
     Ref = make_ref(),
     #request{ref =Ref, msg = Msg, from = From, ctx = Context, timeout = Timeout,
              tref = create_req_timer(Timeout, Ref)}.
 
 %% @private
 %% Create a request timer if desired, otherwise return undefined.
-create_req_timer(infinity, _Ref) ->
+create_req_timer(infinity, _Ref)                                                                                                                  ->
     undefined;
-create_req_timer(undefined, _Ref) ->
+create_req_timer(undefined, _Ref)                                                                                                                 ->
     undefined;
-create_req_timer(Msecs, Ref) ->
+create_req_timer(Msecs, Ref)                                                                                                                      ->
     erlang:send_after(Msecs, self(), {req_timeout, Ref}).
 
 %% @private
 %% Cancel a request timer made by create_timer/2
-cancel_req_timer(undefined) ->
+cancel_req_timer(undefined)                                                                                                                       ->
     ok;
-cancel_req_timer(Tref) ->
+cancel_req_timer(Tref)                                                                                                                            ->
     _ = erlang:cancel_timer(Tref),
     ok.
 
 %% @private
 %% Restart a request timer
 -spec restart_req_timer(#request{}) -> #request{}.
-restart_req_timer(Request) ->
+restart_req_timer(Request)                                                                                                                        ->
     case Request#request.tref of
         undefined ->
             Request;
@@ -1952,7 +1984,7 @@ restart_req_timer(Request) ->
 
 %% @private
 %% Connect the socket if disconnected
-connect(State) when State#state.sock =:= undefined ->
+connect(State) when State#state.sock =:= undefined                                                                                                ->
     #state{address = Address, port = Port, connects = Connects} = State,
     case gen_tcp:connect(Address, Port,
                          [binary, {active, once}, {packet, 4},
@@ -1972,7 +2004,7 @@ connect(State) when State#state.sock =:= undefined ->
     end.
 
 -spec start_tls(#state{}) -> {ok, #state{}} | {error, term()}.
-start_tls(State=#state{sock=Sock}) ->
+start_tls(State=#state{sock=Sock})                                                                                                                ->
     %% Send STARTTLS
     StartTLSCode = riak_pb_codec:msg_code(rpbstarttls),
     ok = gen_tcp:send(Sock, <<StartTLSCode:8>>),
@@ -1987,12 +2019,12 @@ start_tls(State=#state{sock=Sock}) ->
                 rpbstarttls ->
                     Options = [{verify, verify_peer},
                                {cacertfile, State#state.cacertfile}] ++
-                              [{K, V} || {K, V} <- [{certfile,
-                                                     State#state.certfile},
-                                                    {keyfile,
-                                                     State#state.keyfile}],
-                                         V /= undefined] ++
-                              State#state.ssl_opts,
+                        [{K, V} || {K, V} <- [{certfile,
+                                               State#state.certfile},
+                                              {keyfile,
+                                               State#state.keyfile}],
+                                   V /= undefined] ++
+                        State#state.ssl_opts,
                     case ssl:connect(Sock, Options, 1000) of
                         {ok, SSLSock} ->
                             ok = ssl:setopts(SSLSock, [{active, once}]),
@@ -2011,7 +2043,7 @@ start_tls(State=#state{sock=Sock}) ->
             end
     end.
 
-start_auth(State=#state{credentials={User,Pass}, sock=Sock}) ->
+start_auth(State=#state{credentials={User,Pass}, sock=Sock})                                                                                      ->
     ok = ssl:send(Sock, riak_pb_codec:encode(#rpbauthreq{user=User,
                                                          password=Pass})),
     receive
@@ -2032,7 +2064,7 @@ start_auth(State=#state{credentials={User,Pass}, sock=Sock}) ->
 
 %% @private
 %% Disconnect socket if connected
-disconnect(State) ->
+disconnect(State)                                                                                                                                 ->
     %% Tell any pending requests we've disconnected
     _ = case State#state.active of
             undefined ->
@@ -2062,7 +2094,7 @@ disconnect(State) ->
     end.
 
 %% Double the reconnect interval up to the maximum
-increase_reconnect_interval(State) ->
+increase_reconnect_interval(State)                                                                                                                ->
     case State#state.reconnect_interval of
         Interval when Interval < ?MAX_RECONNECT_INTERVAL ->
             NewInterval = min(Interval+Interval, ?MAX_RECONNECT_INTERVAL),
@@ -2073,7 +2105,7 @@ increase_reconnect_interval(State) ->
 
 %% Send a request to the server and prepare the state for the response
 %% @private
-send_request(Request0, State) when State#state.active =:= undefined ->
+send_request(Request0, State) when State#state.active =:= undefined                                                                               ->
     {Request, Pkt} = encode_request_message(Request0),
     Transport = State#state.transport,
     case Transport:send(State#state.sock, Pkt) of
@@ -2087,10 +2119,11 @@ send_request(Request0, State) when State#state.active =:= undefined ->
 
 %% Already encoded (for tunneled messages), but must provide Message Id
 %% for responding to the second form of send_request.
-encode_request_message(#request{msg={tunneled,MsgId,Pkt}}=Req) ->
+encode_request_message(#request{msg={tunneled,MsgId,Pkt}}=Req)                                                                                    ->
     {Req#request{msg={tunneled,MsgId}},[MsgId|Pkt]};
 %% Unencoded Request (the normal PB client path)
-encode_request_message(#request{msg=Msg}=Req) ->
+encode_request_message(#request{msg=Msg}=Req)                                                                                                     ->
+    %% io:format("Msg: ~p~n", [Msg]),
     {Req, riak_pb_codec:encode(Msg)}.
 
 %% If the socket was closed, see if we can enqueue the request and
@@ -2234,7 +2267,7 @@ finish_mapred_many(Acc) ->
 
 %% Receive one mapred message.
 -spec receive_mapred(req_id(), timeout()) ->
-         done | {mapred, integer(), [term()]} | {error, term()} | timeout.
+                            done | {mapred, integer(), [term()]} | {error, term()} | timeout.
 receive_mapred(ReqId, Timeout) ->
     receive {ReqId, Msg} ->
             %% Msg should be `done', `{mapred, Phase, Results}', or
@@ -2373,8 +2406,8 @@ reset_solr(Pid) ->
     {ok, Indexes} = ?MODULE:list_search_indexes(Pid),
     [ ?MODULE:delete_search_index(Pid, proplists:get_value(index,Index)) || Index <- Indexes ],
     wait_until( fun() ->
-        {ok, []} == ?MODULE:list_search_indexes(Pid)
-    end, 20, 1000),
+                        {ok, []} == ?MODULE:list_search_indexes(Pid)
+                end, 20, 1000),
     ok.
 
 %% Resets a Riak 1.2+ node, which can run the memory backend in 'test'
@@ -2429,13 +2462,13 @@ reset_ring() ->
 %% Finds the pid of the PB listener process
 riak_pb_listener_pid() ->
     {Children, Proc} = case compare_versions(riak_version(), [1,2,0]) of
-                            less ->
+                           less ->
                                {supervisor:which_children({riak_kv_sup, test_riak_node()}),
                                 riak_kv_pb_listener};
-                            _ ->
+                           _ ->
                                {supervisor:which_children({riak_api_sup, test_riak_node()}),
                                 riak_api_pb_listener}
-                        end,
+                       end,
     hd([Pid || {_,Pid,_,[Mod]} <- Children, Mod == Proc]).
 
 pause_riak_pb_listener() ->
@@ -2582,14 +2615,14 @@ pb_socket_test_() ->
              net_kernel:stop()
      end,
      {generator,
-     fun() ->
-             case catch net_adm:ping(test_riak_node()) of
-                 pong ->
-                     live_node_tests();
-                 _ ->
-                     [] %% {skipped, need_live_server};
-             end
-     end}}.
+      fun() ->
+              case catch net_adm:ping(test_riak_node()) of
+                  pong ->
+                      live_node_tests();
+                  _ ->
+                      [] %% {skipped, need_live_server};
+              end
+      end}}.
 
 
 %% Check the reconnect interval increases up to the max and sticks there
@@ -2754,11 +2787,11 @@ live_node_tests() ->
                  {error, notfound} = ?MODULE:get(Pid, <<"b">>, <<"k">>)
              end)},
 
-    {"delete missing key test",
+     {"delete missing key test",
       ?_test(begin
                  reset_riak(),
                  {ok, Pid} = start_link(test_ip(), test_port()),
-                  %% Delete and check no longer found
+                 %% Delete and check no longer found
                  ok = ?MODULE:delete(Pid, <<"notabucket">>, <<"k">>, [{rw, 1}]),
                  {error, notfound} = ?MODULE:get(Pid, <<"notabucket">>, <<"k">>)
              end)},
@@ -2876,7 +2909,7 @@ live_node_tests() ->
                  receive {2,Ping2} -> ?assertEqual(Ping2, pong) end
              end)},
 
-    {"timeout queue test",
+     {"timeout queue test",
       ?_test(begin
                  %% Would really like this in a nested {setup, blah} structure
                  %% but eunit does not allow
@@ -2893,7 +2926,7 @@ live_node_tests() ->
                  receive {2,Ping2} -> ?assertEqual({error, timeout}, Ping2) end
              end)},
 
-    {"ignore stale tref test",
+     {"ignore stale tref test",
       ?_test(begin
                  %% Would really like this in a nested {setup, blah} structure
                  %% but eunit does not allow
@@ -2902,7 +2935,7 @@ live_node_tests() ->
                  ?assertEqual(pong, ping(Pid))
              end)},
 
-   {"infinite timeout ping test",
+     {"infinite timeout ping test",
       ?_test(begin
                  %% Would really like this in a nested {setup, blah} structure
                  %% but eunit does not allow
@@ -2965,11 +2998,11 @@ live_node_tests() ->
                                               {reduce, {jsanon,
                                                         <<"function(v) {
                                                              total = v.reduce(
-                                                               function(prev,curr,idx,array) {
-                                                                 return prev+curr;
-                                                               }, 0);
-                                                             return [total];
-                                                           }">>},
+                                                                         function(prev,curr,idx,array) {
+                                                                                   return prev+curr;
+                                                                                  }, 0);
+                                                          return [total];
+                                                          }">>},
                                                undefined, true}]))
              end)},
 
