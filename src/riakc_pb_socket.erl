@@ -1634,8 +1634,8 @@ process_response(#request{msg = #rpbscanreq{}}, rpbscanresp, State)             
     {reply, {error, notfound}, State};
 process_response(#request{msg = #rpbscanreq{type = _Type, bucket = _Bucket, key = _Key}},
                  #rpbscanresp{content = Pbc}, State) ->
-    %% Content = hd(Pbc),
-    Value = Pbc#rpbcontent.value,
+    Content = hd(Pbc),
+    Value = Content#rpbcontent.value,
     {reply, {ok, binary_to_term(Value)}, State};
 
 process_response(#request{msg = #rpbputreq{}},
