@@ -46,7 +46,7 @@
          set_client_id/2, set_client_id/3,
          get_server_info/1, get_server_info/2,
          get/3, get/4, get/5,
-         scan/6, scan/7, scan/8,
+         scan/5, scan/6, scan/7,
          put/2, put/3, put/4,
          delete/3, delete/4, delete/5,
          delete_vclock/4, delete_vclock/5, delete_vclock/6,
@@ -159,7 +159,7 @@
 %% to `infinity'.
 call_infinity(Pid, Msg)                                                                                                                           ->
     gen_server:call(Pid, Msg, infinity).
-
+ 
 %% @doc Create a linked process to talk with the riak server on Address:Port
 %%      Client id will be assigned by the server.
 -spec start_link(address(), portnum()) -> {ok, pid()} | {error, term()}.
@@ -295,17 +295,17 @@ get(Pid, Bucket, Key, Options, Timeout)                                         
     Req = get_options(Options, #rpbgetreq{type =T, bucket = B, key = Key}),
     call_infinity(Pid, {req, Req, Timeout}).
 
-scan(Pid, Bucket, Key, Offset, Len, Order)                                                                                                        ->
-    scan(Pid, Bucket, Key, Offset, Len, Order, [], default_timeout(get_timeout)).
+scan(Pid, Bucket, Offset, Len, Order)                                                                                                        ->
+    scan(Pid, Bucket, Offset, Len, Order, [], default_timeout(get_timeout)).
 
-scan(Pid, Bucket, Key, Offset, Len, Order, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                ->
-    scan(Pid, Bucket, Key, Offset, Len, Order, [], Timeout);
-scan(Pid, Bucket, Key, Offset, Len, Order, Options)                                                                                               ->
-    scan(Pid, Bucket, Key, Offset, Len, Order, Options, default_timeout(get_timeout)).
+scan(Pid, Bucket, Offset, Len, Order, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                ->
+    scan(Pid, Bucket, Offset, Len, Order, [], Timeout);
+scan(Pid, Bucket, Offset, Len, Order, Options)                                                                                               ->
+    scan(Pid, Bucket, Offset, Len, Order, Options, default_timeout(get_timeout)).
 
-scan(Pid, Bucket, Key, Offset, Len, Order, Options, Timeout)                                                                                      ->
+scan(Pid, Bucket, Offset, Len, Order, Options, Timeout)                                                                                      ->
     {T, B} = maybe_bucket_type(Bucket),
-    Req = scan_options(Options, #rpbscanreq{type =T, bucket = B, key = Key, offset = Offset, len = Len, order = Order, timeout=Timeout}),
+    Req = scan_options(Options, #rpbscanreq{type =T, bucket = B, offset = Offset, len = Len, order = Order, timeout=Timeout}),
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc Put the metadata/value in the object under bucket/key
@@ -1632,10 +1632,10 @@ process_response(#request{msg = #rpbgetreq{type = Type, bucket = Bucket, key = K
 process_response(#request{msg = #rpbscanreq{}}, rpbscanresp, State)                                                                                 ->
     %% server just returned the rpbscanresp code - no message was encoded
     {reply, {error, notfound}, State};
-process_response(#request{msg = #rpbscanreq{type = _Type, bucket = _Bucket, key = _Key}},
+process_response(#request{msg = #rpbscanreq{type = _Type, bucket = _Bucket}},
                  #rpbscanresp{content = Pbc}, State) ->
-    Content = hd(Pbc),
-    Value = Content#rpbcontent.value,
+    %% Content = hd(Pbc),
+    Value = Pbc#rpbcontent.value,
     {reply, {ok, binary_to_term(Value)}, State};
 
 process_response(#request{msg = #rpbputreq{}},
