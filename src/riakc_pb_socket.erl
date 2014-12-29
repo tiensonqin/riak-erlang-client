@@ -159,7 +159,7 @@
 %% to `infinity'.
 call_infinity(Pid, Msg)                                                                                                                           ->
     gen_server:call(Pid, Msg, infinity).
- 
+
 %% @doc Create a linked process to talk with the riak server on Address:Port
 %%      Client id will be assigned by the server.
 -spec start_link(address(), portnum()) -> {ok, pid()} | {error, term()}.
@@ -296,16 +296,17 @@ get(Pid, Bucket, Key, Options, Timeout)                                         
     call_infinity(Pid, {req, Req, Timeout}).
 
 scan(Pid, Bucket, Offset, Len, Order)                                                                                                        ->
-    scan(Pid, Bucket, Offset, Len, Order, [], default_timeout(get_timeout)).
+    scan(Pid, Bucket, Offset, Len, Order, [{return_body, false}], default_timeout(get_timeout)).
 
 scan(Pid, Bucket, Offset, Len, Order, Timeout) when is_integer(Timeout); Timeout =:= infinity                                                ->
-    scan(Pid, Bucket, Offset, Len, Order, [], Timeout);
+    scan(Pid, Bucket, Offset, Len, Order, [{return_body, false}], Timeout);
 scan(Pid, Bucket, Offset, Len, Order, Options)                                                                                               ->
     scan(Pid, Bucket, Offset, Len, Order, Options, default_timeout(get_timeout)).
 
 scan(Pid, Bucket, Offset, Len, Order, Options, Timeout)                                                                                      ->
     {T, B} = maybe_bucket_type(Bucket),
     Req = scan_options(Options, #rpbscanreq{type =T, bucket = B, offset = Offset, len = Len, order = Order, timeout=Timeout}),
+
     call_infinity(Pid, {req, Req, Timeout}).
 
 %% @doc Put the metadata/value in the object under bucket/key
@@ -1468,6 +1469,10 @@ scan_options([], Req)                                                           
 scan_options([{timeout, T} | Rest], Req) when is_integer(T)                                                                                       ->
     scan_options(Rest, Req#rpbscanreq{timeout = T});
 scan_options([{timeout, _T} | _Rest], _Req)                                                                                                       ->
+    erlang:error(badarg);
+scan_options([{return_body, B} | Rest], Req) when is_boolean(B)                                                                                       ->
+    scan_options(Rest, Req#rpbscanreq{return_body = B});
+scan_options([{return_body , _B} | _Rest], _Req)                                                                                                       ->
     erlang:error(badarg);
 scan_options([{_, _} | _Rest], _Req)                                                                                                              ->
     erlang:error(badarg).
